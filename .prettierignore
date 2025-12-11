@@ -1,0 +1,6 @@
+/dist
+/public
+/node_modules
+/src/assets
+/src/types/autoImport.d.ts
+/src/types/component.d.ts
