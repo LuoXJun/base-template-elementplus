@@ -147,7 +147,7 @@ const props = defineProps({
         }
     },
     checkedKeys: {
-        type: Array as PropType<string[]>,
+        type: Array as PropType<string[] | number[]>,
         default: () => []
     },
     filterNode: {
@@ -161,7 +161,7 @@ const treeRef = useTemplateRef('treeRef');
 const treeRef1 = useTemplateRef('treeRef1');
 const filterText = ref<FilterValue>();
 const filterText1 = ref<FilterValue>();
-const checkedDataSet = ref<any[]>([]);
+const checkedDataSet = ref<TreeNodeData[]>([]);
 const indeterminate = ref(false);
 const checkedLength = ref(0);
 
@@ -177,7 +177,10 @@ watch(
     () => {
         nextTick(() => {
             if (treeRef.value) {
-                treeRef.value.getNodeDetail('setCheckedKeys', { keys: props.checkedKeys });
+                treeRef.value.getNodeDetail('setCheckedKeys', {
+                    keys: props.checkedKeys,
+                    leafOnly: false
+                });
                 getCheckedData();
             }
         });
@@ -217,7 +220,8 @@ const getCheckedData = () => {
         checkedDataSet.value = filterTree(useDeepClone(props.treeData), checkedKeys, key);
     } else {
         checkedDataSet.value = treeRef.value!.getNodeDetail('getCheckedNodes', {
-            leafOnly: true
+            leafOnly: true,
+            includeHalfChecked: false
         }) as TreeNodeData[];
     }
 
@@ -250,7 +254,7 @@ const allSelected = (check: CheckboxValueType) => {
 
     const keys = getNodeKeys(props.treeData);
     if (check) {
-        treeRef.value?.getNodeDetail('setCheckedKeys', { keys });
+        treeRef.value?.getNodeDetail('setCheckedKeys', { keys, leafOnly: true });
     } else {
         keys.forEach((key) => {
             treeRef.value?.getNodeDetail('setChecked', {

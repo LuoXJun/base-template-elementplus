@@ -26,12 +26,7 @@
 
 <script setup lang="ts">
 import { checkKeysExist } from '@/utils/common';
-import type {
-    FilterNodeMethodFunction,
-    RenderContentContext,
-    TreeInstance,
-    TreeNodeData
-} from 'element-plus';
+import type { FilterNodeMethodFunction, RenderContentContext, TreeNodeData } from 'element-plus';
 import { type PropType } from 'vue';
 
 const emits = defineEmits(['handleClickTree', 'check']);
@@ -74,7 +69,7 @@ defineProps({
     }
 });
 
-const treeRef = useTemplateRef<TreeInstance>('treeRef');
+const treeRef = useTemplateRef('treeRef');
 
 const handleNodeClick = (
     node: RenderContentContext['node'],
@@ -115,8 +110,9 @@ const getNodeDetail = (type: TTreeMethods, params?: TTreeMethodsParams) => {
                 data = treeRef.value!.setCheckedKeys(params!.keys!, params!.leafOnly);
             break;
         case 'setChecked':
-            if (checkKeysExist(params, ['key', 'leafOnly']))
+            if (checkKeysExist(params, ['key', 'checked']))
                 data = treeRef.value!.setChecked(params!.key!, params!.checked!, true);
+
             break;
         case 'getHalfCheckedNodes':
             data = treeRef.value!.getHalfCheckedNodes();
@@ -142,11 +138,11 @@ const getNodeDetail = (type: TTreeMethods, params?: TTreeMethodsParams) => {
             break;
         case 'insertBefore':
             if (checkKeysExist(params, ['data', 'refNode']))
-                data = treeRef.value!.insertBefore(params!.data!, params!.refNode!);
+                data = treeRef.value!.insertBefore(params!.data!, params!.key!);
             break;
         case 'insertAfter':
             if (checkKeysExist(params, ['data', 'refNode']))
-                data = treeRef.value!.insertAfter(params!.data!, params!.refNode!);
+                data = treeRef.value!.insertAfter(params!.data!, params!.key!);
             break;
         case 'remove':
             if (checkKeysExist(params, ['data', 'refNode']))

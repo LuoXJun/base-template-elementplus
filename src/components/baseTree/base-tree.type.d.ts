@@ -49,8 +49,6 @@ declare global {
         checked?: boolean;
         // 父节点对象
         parentNode?: RenderContentContext['node'];
-        // 插入节点时的参考节点
-        refNode?: RenderContentContext['node'];
         //filter时需要传入的参数
         filterValue?: FilterValue;
     }

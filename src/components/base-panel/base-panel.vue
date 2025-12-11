@@ -55,13 +55,13 @@ const props = defineProps({
 });
 
 // 需要移动的目标
-const basePanelRef = ref<HTMLElement>();
+const basePanelRef = useTemplateRef('basePanelRef');
 // 触发移动事件的目标
-const triggerRef = ref();
+const triggerRef = useTemplateRef('triggerRef');
 const drag = computed(() => {
     return props.draggable;
 });
-useDraggable(basePanelRef, triggerRef, drag);
+useDraggable(basePanelRef as Ref<HTMLElement>, triggerRef as Ref<HTMLElement>, drag);
 
 const onCancel = () => {
     dialogVisible.value = false;

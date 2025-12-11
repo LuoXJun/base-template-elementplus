@@ -237,7 +237,7 @@ defineProps({
     }
 });
 
-const baseFormRef = ref<FormInstance>();
+const baseFormRef = useTemplateRef('baseFormRef');
 
 // 验证
 const validate = () => {

@@ -1,11 +1,36 @@
 <template>
-    <baseTree :treeData="data" />
-    <baseTransfer :treeData="data" node-key="id" />
+    <el-row>
+        <el-col :span="8">
+            树
+            <baseTree :treeData="data" />
+        </el-col>
+        <el-col :span="8">
+            获取选中项并保持原有结构
+            <baseTransfer
+                type="tree"
+                :treeData="data"
+                node-key="id"
+                :filter-node="filterNode"
+                :checked-keys="checkedKeys"
+            />
+        </el-col>
+        <el-col :span="8">
+            仅获取选中项自身
+            <baseTransfer
+                type="li"
+                :treeData="data"
+                node-key="id"
+                :filter-node="filterNode"
+                :checked-keys="checkedKeys"
+            />
+        </el-col>
+    </el-row>
 </template>
 
 <script setup lang="ts">
 import baseTree from '@/components/baseTree/base-tree.vue';
 import baseTransfer from '@/components/baseTransfer/baseTransfer.vue';
+import type { FilterNodeMethodFunction } from 'element-plus';
 
 const data = [
     {
@@ -57,6 +82,14 @@ const data = [
         ]
     }
 ];
+
+const checkedKeys = [9, 8];
+
+const filterNode: FilterNodeMethodFunction = (value, data) => {
+    if (!value) return true;
+    if (data.label.includes(value)) return true;
+    return false;
+};
 </script>
 
 <style scoped></style>

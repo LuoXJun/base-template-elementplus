@@ -52,4 +52,4 @@ export const isEmpty = (val: any): boolean => {
 
 // 判断给定的key集合，是否在对象中均存在
 export const checkKeysExist = (obj: Record<string, any> | null | undefined, keys: string[]) =>
-    obj && typeof obj === 'object' && keys.every((key) => key in obj && obj[key]);
+    obj && typeof obj === 'object' && keys.every((key) => key in obj);

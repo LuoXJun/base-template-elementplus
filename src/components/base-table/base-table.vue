@@ -49,7 +49,6 @@
 </template>
 
 <script setup lang="ts">
-import type { ElTable } from 'element-plus';
 import { type PropType } from 'vue';
 import basePagination from '../base-pagination/base-pagination.vue';
 const emits = defineEmits(['selected', 'currentChange', 'onPageChange']);
@@ -91,7 +90,7 @@ const props = defineProps({
         default: () => true
     }
 });
-const multipleTableRef = ref<InstanceType<typeof ElTable>>();
+const multipleTableRef = useTemplateRef('multipleTableRef');
 
 const handleSelectionChange = (value: any) => {
     emits('selected', { value, type: 'change' });
