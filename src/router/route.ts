@@ -1,12 +1,21 @@
 export const routeConfig: RouteOptions[] = [
     {
-        path: '/',
-        sort: 0,
+        path: '/aa-useCase',
+        sort: 1,
         component: 'aa-useCase',
         name: 'useCase',
         type: 'link',
         title: '组件使用案例'
     },
+    {
+        path: '/',
+        sort: 0,
+        component: 'homePage',
+        name: 'homePage',
+        type: 'link',
+        title: '主页'
+    },
+
     {
         path: '/c',
         sort: 2,
