@@ -425,6 +425,7 @@ export class RenderGeoJsonByGround {
             this.viewer.entities.remove(entity);
         });
 
+        this.entities.length = 0;
         this.fillPrimitives = [];
         this.strokePrimitives = [];
     }
@@ -721,3 +722,34 @@ export class DrawGeometry {
         this.entities.length = 0;
     }
 }
+
+// 去除geojson中的高度信息
+export const removeHeightFromGeoJSON = (geoJson: FeatureCollection) => {
+    function processCoordinates(coords: Geometry['coordinates']): Geometry['coordinates'] {
+        if (Array.isArray(coords)) {
+            if (typeof coords[0] === 'number') {
+                return [coords[0], coords[1]] as Position;
+            } else {
+                // @ts-ignore
+                return coords.map(processCoordinates);
+            }
+        }
+
+        return coords;
+    }
+
+    const processed: FeatureCollection | Feature = JSON.parse(JSON.stringify(geoJson));
+
+    if (processed.type === 'FeatureCollection') {
+        processed.features.forEach((feature) => {
+            if (feature.geometry) {
+                feature.geometry.coordinates = processCoordinates(feature.geometry.coordinates);
+            }
+        });
+    } else if (processed.type === 'Feature') {
+        if (!processed.geometry) return;
+        processed.geometry.coordinates = processCoordinates(processed.geometry.coordinates);
+    }
+
+    return processed;
+};
