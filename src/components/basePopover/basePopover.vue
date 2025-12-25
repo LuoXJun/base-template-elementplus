@@ -70,11 +70,11 @@ defineProps({
         default: () => '提示'
     },
     type: {
-        type: String as PropType<TconfirmType>,
+        type: String as PropType<TipType>,
         default: 'normal'
     },
     placement: {
-        type: String as PropType<TPlacement>,
+        type: String as PropType<PopoverPlacement>,
         default: () => 'bottom-end'
     }
 });

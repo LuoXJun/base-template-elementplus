@@ -1,6 +1,6 @@
-type TconfirmType = 'normal' | 'error' | 'warning';
-type TTrigger = 'click' | 'focus' | 'hover' | 'contextmenu';
-type TPlacement =
+type TipType = 'normal' | 'error' | 'warning';
+type TriggerStatus = 'click' | 'focus' | 'hover' | 'contextmenu';
+type PopoverPlacement =
     | 'top'
     | 'top-start'
     | 'top-end'

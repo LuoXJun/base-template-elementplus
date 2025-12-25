@@ -1,25 +1,26 @@
 import { type AxiosResponse } from 'axios';
+import { ElMessage } from 'element-plus';
 import BaseRequest from './base_request';
-import { TIME_OUT, BASE_URL } from './config/index';
+import { TIME_OUT } from './config/index';
 import router from '@/router';
-import { MessagePlugin } from 'tdesign-vue-next';
 
 const requestList: any[] = [];
 let isRefreshing = false;
 
 const request = new BaseRequest({
-    baseURL: BASE_URL,
+    baseURL: window.BASE_URL.wutanUrl,
     timeout: TIME_OUT,
     isLoading: true,
     interceptors: {
         requestIntercepter: (config) => {
-            if (config.url?.includes('token')) config.headers.Authorization = '';
+            config.headers.Authorization = '1';
+
             return config;
         },
 
         requestIntercepterCatch: (err) => {
             if (err.request) {
-                MessagePlugin.error(err.request);
+                ElMessage.error(err.request);
             }
             return Promise.reject(err);
         },
@@ -31,57 +32,28 @@ const request = new BaseRequest({
                 return res;
             } else {
                 if (res.data.msg && res.data.msg.includes('flushToken过期')) router.push('/login');
-                MessagePlugin.warning(res.data.message ?? res.data.msg ?? '请求出错');
-                return Promise.reject(res) as any as AxiosResponse<ResponseDataType>;
+                ElMessage.warning(res.data.message ?? res.data.msg ?? res.data);
+                return Promise.reject(res) as any as AxiosResponse<ResponseDataType<any>>;
             }
         },
 
         responseIntercepterCatch: async (err) => {
             switch (err.status) {
                 case 201:
-                    MessagePlugin.error('Createe');
+                    ElMessage.error('Createe');
                     break;
                 case 401:
-                    // if (location.hash.includes('login')) break;
-                    // const { config } = err;
-
-                    // if (isRefreshing) {
-                    //     new Promise((resolve) => {
-                    //         requestList.push(() => {
-                    //             resolve(request.instance.request(config));
-                    //         });
-                    //     });
-                    //     break;
-                    // }
-
-                    // isRefreshing = true;
-                    // try {
-                    //     const { data } = await refreshTokenApi({
-                    //         token: sessionStorage.getItem('token'),
-                    //         refreshToken: sessionStorage.getItem('refreshToken')
-                    //     });
-                    //     if (data.code === 200) {
-                    //         sessionStorage.setItem('token', data.data.token);
-                    //         sessionStorage.setItem('refreshToken', data.data.refreshToken);
-                    //     }
-
-                    //     requestList.forEach((request) => request());
-                    //     requestList.length = 0;
-
-                    //     request.instance.request(config);
-                    // } finally {
-                    //     isRefreshing = false;
-                    // }
+                    ElMessage.error('Unauthorized -未认证');
                     break;
                 case 403:
-                    MessagePlugin.error('Forbidden');
+                    ElMessage.error('Forbidden');
                     break;
                 case 404:
-                    MessagePlugin.error('404 notFound');
+                    ElMessage.error('404 notFound');
                     break;
 
                 default:
-                    MessagePlugin.error(err?.response?.data?.message ?? err?.message ?? err);
+                    ElMessage.error(err?.response?.data?.message ?? err?.message ?? err);
             }
             return Promise.reject(err);
         }

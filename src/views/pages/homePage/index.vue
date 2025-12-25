@@ -8,19 +8,18 @@
 import baseCesiumViewer from '@/components/baseCesiumViewer/index.vue';
 
 import { useCesiumViewer } from '@/stores/useCesiumViewer';
-import { RenderGeoJsonByGround } from '@/utils/cesium-utils';
+import { createRectangleByCenter } from '@/utils/cesiumTools/RadarEffect';
 
 const store = useCesiumViewer();
 
-const loadGeojson = async () => {
-    const geoJson = await Cesium.Resource.fetchJson({ url: '/public/geojson.json' });
-
-    const renderer = new RenderGeoJsonByGround(store.Viewer!);
-    renderer.renderGeoJSON(geoJson);
-};
-
 onMounted(() => {
-    loadGeojson();
+    // 使用示例
+    const center = Cesium.Cartesian3.fromDegrees(116.397, 39.909, 0); // 北京中心
+    const radiusDegrees = 0.5; // 约5.5公里半径
+
+    const rectangle = createRectangleByCenter(center, radiusDegrees);
+
+    store.Viewer!.scene.primitives.add(rectangle);
 });
 </script>
 
