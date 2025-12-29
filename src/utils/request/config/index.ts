@@ -15,6 +15,5 @@ switch (import.meta.env.MODE) {
         BASE_URL = '';
         break;
 }
-console.log(import.meta.env.MODE);
 
 export { BASE_URL, TIME_OUT };

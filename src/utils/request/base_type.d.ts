@@ -1,34 +1,15 @@
 import { AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
 declare global {
-    interface ResponseDataTypeBase {
-        current?: number;
-        pageIndex?: number;
-        size?: number;
-        pageSize?: number;
-        total?: number;
-        pages?: number;
+    interface ResponseDataRecoeds<T> {
+        total: number;
+        records: T[];
     }
-    interface ResponseDataTypeRows extends ResponseDataTypeBase {
-        rows: Record<string, any>[];
-    }
-    interface ResponseDataTypeRecords extends ResponseDataTypeBase {
-        records: Record<string, any>[];
-    }
-    type ResponseDataTypeString = string;
-    type ResponseDataTypeArray = any[];
-    type ResponseDataTypeRecord = Record<string, any>;
-
-    interface ResponseDataType {
+    interface ResponseDataType<T> {
         code: string | number;
         message?: string;
+        data: T;
         msg?: string;
-        data?:
-            | ResponseDataTypeRows
-            | ResponseDataTypeRecords
-            | ResponseDataTypeString
-            | ResponseDataTypeArray
-            | ResponseDataTypeRecord;
     }
 
     interface IbaseRequestConfig {

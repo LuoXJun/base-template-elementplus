@@ -1,14 +1,13 @@
 import axios from 'axios';
 import type { AxiosInstance, AxiosResponse, AxiosPromise } from 'axios';
-// @ts-ignore
+import { ElLoading } from 'element-plus';
 import qs from 'qs';
-import { LoadingPlugin, type LoadingInstance } from 'tdesign-vue-next';
 
 class BaseRequest {
     instance: AxiosInstance;
     interceptors?: IbaseRequestConfig;
     // 接受实例化的loading对象
-    loading: LoadingInstance | undefined;
+    loading: any;
     // 是否显示加载
     isLoading: boolean;
 
@@ -60,8 +59,8 @@ class BaseRequest {
     // 共有响应拦截
     private commonResponseInterceptor = () => {
         this.instance.interceptors.response.use(
-            (res: AxiosResponse<ResponseDataType>) => {
-                this.loading?.hide();
+            (res: AxiosResponse<ResponseDataType<any>>) => {
+                this.loading?.close();
                 if (res.request.responseType == 'blob') {
                     const size = res.headers['content-length'];
                     let name = res.headers['content-disposition'] ?? '';
@@ -84,23 +83,22 @@ class BaseRequest {
                 return res;
             },
             (err) => {
-                this.loading?.hide();
+                this.loading?.close();
                 return Promise.reject(err);
             }
         );
     };
 
     // 实例化每个请求的拦截
-    request(config: IbaseInstanceConfig): AxiosPromise<ResponseDataType> {
+    request<T>(config: IbaseInstanceConfig): AxiosPromise<ResponseDataType<T>> {
         // 发送请求时控制是否显示加载框
         this.isLoading = config.isLoading ?? true;
         // 发起请求时调用加载
         if (this.isLoading) {
-            this.loading = LoadingPlugin({
+            this.loading = ElLoading.service({
                 fullscreen: true,
-                attach: 'body',
-                preventScrollThrough: true,
-                text: config.loadingText ?? '加载中...'
+                lock: true,
+                text: config.loadingText ?? 'Loading'
             });
         }
         return new Promise((resolve, reject) => {
@@ -118,7 +116,7 @@ class BaseRequest {
                 }
             }
 
-            this.instance.request<ResponseDataType>(config).then(
+            this.instance.request<ResponseDataType<T>>(config).then(
                 (res) => {
                     if (config.interceptors?.responseIntercepter) {
                         res = config.interceptors.responseIntercepter(res);
@@ -132,8 +130,8 @@ class BaseRequest {
         });
     }
 
-    post(url: string, data: Record<string, any> = {}, config?: IbaseInstanceConfig) {
-        return this.request({
+    post<T = any>(url: string, data: Record<string, any> = {}, config?: IbaseInstanceConfig) {
+        return this.request<T>({
             url,
             method: 'POST',
             data,
@@ -141,8 +139,8 @@ class BaseRequest {
         });
     }
 
-    put(url: string, data: Record<string, any> = {}, config?: IbaseInstanceConfig) {
-        return this.request({
+    put<T = any>(url: string, data: Record<string, any> = {}, config?: IbaseInstanceConfig) {
+        return this.request<T>({
             url,
             method: 'put',
             data,
@@ -150,8 +148,8 @@ class BaseRequest {
         });
     }
 
-    get(url: string, data: Record<string, any> = {}, config?: IbaseInstanceConfig) {
-        return this.request({
+    get<T = any>(url: string, data: Record<string, any> = {}, config?: IbaseInstanceConfig) {
+        return this.request<T>({
             url,
             method: 'GET',
             params: data,
@@ -159,8 +157,8 @@ class BaseRequest {
         });
     }
 
-    delete(url: string, data: Record<string, any> = {}, config?: IbaseInstanceConfig) {
-        return this.request({
+    delete<T = any>(url: string, data: Record<string, any> = {}, config?: IbaseInstanceConfig) {
+        return this.request<T>({
             url,
             method: 'delete',
             params: data,
@@ -168,8 +166,8 @@ class BaseRequest {
         });
     }
 
-    blob(url: string, data: Record<string, any> = {}, config?: IbaseInstanceConfig) {
-        return this.request({
+    blob<T = any>(url: string, data: Record<string, any> = {}, config?: IbaseInstanceConfig) {
+        return this.request<T>({
             url,
             method: 'GET',
             params: data,

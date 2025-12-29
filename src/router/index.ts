@@ -51,7 +51,7 @@ router.beforeEach((to, _, next) => {
         path: to.matched[1]?.path
     };
 
-    if (store.isNeedUpdate) {
+    if (store.isNeedUpdate || !router.hasRoute('layout')) {
         store.setRoute(store.getRoutes(store.menu));
 
         store.$patch((state) => {

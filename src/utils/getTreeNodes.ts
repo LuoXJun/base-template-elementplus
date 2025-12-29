@@ -1,13 +1,18 @@
 // element tree结构中，获取选中的节点和父级节点构成的新树，并保持原数据结构不变--包括半选父级
 
-import type { TreeKey } from "element-plus";
+import type { TreeData, TreeKey, TreeNodeData } from 'element-plus';
 
 /**
  * @param data 原树形结构
  * @param keys 需要被筛选的节点
  * @param key 对应树形结构中的key ---tree中props的label
  * */
-export const filterTree = (data: any[], keys: TreeKey[], nodeKey: string, children = 'children') => {
+export const filterTree = (
+    data: any[],
+    keys: TreeKey[],
+    nodeKey: TreeKey,
+    children = 'children'
+) => {
     const labelSet = new Set(keys);
 
     function traverse(nodes: any[]) {
@@ -46,8 +51,8 @@ export const filterTree = (data: any[], keys: TreeKey[], nodeKey: string, childr
  * checkedKeys为nodekey
  * */
 export const buildSelectedTree = (
-    tree: any[],
-    checkedKeys: string[],
+    tree: TreeData,
+    checkedKeys: TreeKey[],
     nodeKey: string,
     children = 'children'
 ) => {
@@ -58,7 +63,7 @@ export const buildSelectedTree = (
     });
 
     // 递归查找选中节点的函数
-    const findSelectedNodes = (nodes: any[]) => {
+    const findSelectedNodes = (nodes: TreeData) => {
         const result: any[] = [];
 
         for (const node of nodes) {
@@ -83,14 +88,14 @@ export const buildSelectedTree = (
 
 // 获取当前节点以及父级节点并变为数组平级数组--包含半选
 export const findNodeAndBuildTree = (
-    tree: any[],
+    tree: TreeData,
     targetId: string,
     nodeKey: string,
     children = 'children'
 ) => {
-    let arr = [];
+    let arr: TreeNodeData[] = [];
     // 查找目标节点及其路径
-    function findPath(node: Record<string, any>, path: any[] = []) {
+    function findPath(node: TreeNodeData, path: TreeNodeData[] = []): any {
         path.push(node);
 
         if (node[nodeKey] === targetId) {
@@ -99,7 +104,7 @@ export const findNodeAndBuildTree = (
 
         if (node[children] && node[children].length > 0) {
             for (let child of node[children]) {
-                const result: any = findPath(child, path);
+                const result = findPath(child, path);
                 if (result) return result;
             }
         }
@@ -143,12 +148,12 @@ export const findLeafNodesOptimized = (flatArray: string[]) => {
 
 // 获取当前点击节点层级向上的层级构成的树
 export const getTreePathByIdOptimized = (
-    tree: any[],
-    targetNodeKey: string,
+    tree: TreeData,
+    targetNodeKey: TreeKey,
     nodeKey = 'id',
     children = 'children'
 ) => {
-    function findAndBuildPath(nodes: any[], targetNodeKey: string) {
+    function findAndBuildPath(nodes: TreeData, targetNodeKey: TreeKey): any {
         for (const node of nodes) {
             if (node[nodeKey] === targetNodeKey) {
                 // 找到目标节点，返回该节点的完整拷贝
@@ -156,7 +161,7 @@ export const getTreePathByIdOptimized = (
             }
 
             if (node[children] && node[children].length > 0) {
-                const found: any = findAndBuildPath(node[children], targetNodeKey);
+                const found = findAndBuildPath(node[children], targetNodeKey);
                 if (found) {
                     // 构建路径上的父节点，只包含找到的子节点路径
                     return {
