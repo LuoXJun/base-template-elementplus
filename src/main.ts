@@ -21,12 +21,6 @@ pinia.use(({ store }) => {
             });
         }
     });
-
-    // if (store.$id === 'menu') {
-    //     store.$subscribe((_, state) => {
-    //         sessionStorage.setItem('state', JSON.stringify(state));
-    //     });
-    // }
 });
 
 const app = createApp(App);

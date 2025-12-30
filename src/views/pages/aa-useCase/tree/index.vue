@@ -12,7 +12,7 @@
             获取选中项并保持原有结构
             <baseTransfer
                 type="tree"
-                :treeData="data"
+                v-model="data"
                 node-key="id"
                 :filter-node="filterNode"
                 :checked-keys="checkedKeys"
@@ -22,7 +22,7 @@
             仅获取选中项自身
             <baseTransfer
                 type="li"
-                :treeData="data"
+                v-model="data"
                 node-key="id"
                 :filter-node="filterNode"
                 :checked-keys="checkedKeys"
