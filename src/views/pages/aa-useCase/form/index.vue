@@ -23,11 +23,11 @@
 </template>
 
 <script setup lang="ts">
-import baseForm from '@/components/base-form/baseForm.vue';
+import baseForm from '@/components/baseForm/baseForm.vue';
 import baseVerifyCode from '@/components/baseVerifyCode/baseVerifyCode.vue';
 import { formConfig } from './config';
 
-const form = ref({});
+const form = ref<Partial<Record<ItemType, any>>>({});
 
 const verifyCode = ref();
 const refreshCodeRef = useTemplateRef('refreshCodeRef');

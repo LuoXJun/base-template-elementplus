@@ -46,7 +46,7 @@
             <div class="base-popover-content">{{ content }}</div>
             <div class="base-popover-footer">
                 <el-button class="cancelBtn" @click="visible = false">取消</el-button>
-                <el-button class="confirmBtn" @click="submit">确认</el-button>
+                <el-button class="confirmBtn" @click="emits('onConfirm')">确认</el-button>
             </div>
         </div>
         <template #reference>
@@ -78,10 +78,6 @@ defineProps({
         default: () => 'bottom-end'
     }
 });
-
-const submit = () => {
-    emits('onConfirm');
-};
 </script>
 
 <style lang="scss">

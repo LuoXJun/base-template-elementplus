@@ -18,16 +18,17 @@
 <script setup lang="ts">
 import type { PropType } from 'vue';
 const activeName = defineModel({ default: '' });
+
+const emits = defineEmits<{
+    onClick: [label: string];
+}>();
+
 const props = defineProps({
     labels: {
         type: Array as PropType<Array<string>>,
         default: () => []
     }
 });
-
-const emits = defineEmits<{
-    onClick: [label: string];
-}>();
 
 const onTabChange = (label: string) => {
     activeName.value = label;

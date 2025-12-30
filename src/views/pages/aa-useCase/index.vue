@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import baseTabs from '@/components/base-tabs/baseTabs.vue';
+import baseTabs from '@/components/baseTabs/baseTabs.vue';
 import Form from './form/index.vue';
 import Menu from './menu/index.vue';
 import Panel from './panel/index.vue';

@@ -26,7 +26,7 @@
                 <el-button style="background: #e5e7eb" @click="dialogVisible = false">
                     取消
                 </el-button>
-                <el-button class="confirmBtn" @click="onSave">保存</el-button>
+                <el-button class="confirmBtn" @click="emits('onConfirm')">保存</el-button>
             </slot>
         </div>
     </el-drawer>
@@ -56,10 +56,6 @@ const props = defineProps({
 const onCancel = () => {
     dialogVisible.value = false;
     emits('onCancel');
-};
-
-const onSave = () => {
-    emits('onConfirm');
 };
 </script>
 

@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import basePanel from '@/components/base-panel/base-panel.vue';
+import basePanel from '@/components/basePanel/basePanel.vue';
 import basePopover from '@/components/basePopover/basePopover.vue';
 import baseDialog from '@/components/baseDialog/baseDialog.vue';
 import baseDrawer from '@/components/baseDrawer/baseDrawer.vue';

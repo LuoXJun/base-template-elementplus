@@ -192,19 +192,19 @@
     </el-form>
 </template>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends Record<string, any>">
 import { type PropType } from 'vue';
-import type { FormInstance, FormRules } from 'element-plus';
+import type { FormRules } from 'element-plus';
 import { ElMessage } from 'element-plus';
 
-const modelValue = defineModel<Record<string, any>>({
+const modelValue = defineModel<T>({
     default: {}
 });
 
 const emits = defineEmits<{
-    onChange: [{ filed: string; value: any }];
-    submit: [];
+    onChange: [{ filed: keyof T; value: any }];
     reset: [];
+    submit: [];
 }>();
 
 defineProps({
@@ -221,7 +221,7 @@ defineProps({
         default: () => 'left'
     },
     formItemList: {
-        type: Array as PropType<IformItem[]>,
+        type: Array as PropType<IformItem<{ filed: Extract<keyof T, string>; data?: any[] }>[]>,
         default: () => [],
         required: true
     },
@@ -249,14 +249,18 @@ const validate = () => {
     });
 };
 
-const onChange = (filed: string, val: any) => {
+const onChange = (filed: keyof T, val: any) => {
     emits('onChange', { filed, value: val });
 };
 
 const submit = () => {
-    validate().then((v) => {
-        emits('submit');
-    });
+    validate()
+        .then(() => {
+            emits('submit');
+        })
+        .catch(() => {
+            ElMessage.warning('请完整填写表单');
+        });
 };
 
 defineExpose({ validate });

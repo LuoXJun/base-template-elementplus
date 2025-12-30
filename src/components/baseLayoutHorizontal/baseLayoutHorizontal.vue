@@ -1,5 +1,5 @@
 <template>
-    <div class="baseLayoutHorizontal">
+    <div class="base-layout-horizontal">
         <div class="lxj-header">
             <baseMenuHorizontalHeader />
         </div>
@@ -45,7 +45,7 @@ watchEffect(() => {
 </script>
 
 <style lang="scss" scoped>
-.baseLayoutHorizontal {
+.base-layout-horizontal {
     height: 100%;
     color: #000;
     height: 100%;

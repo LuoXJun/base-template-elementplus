@@ -5,7 +5,7 @@ const checkNumber = (rule: any, value: any, callback: any) => {
         else callback(new Error('排序请输入数字'));
     }
 };
-export const formConfig = ref<IformItem[]>([
+export const formConfig = ref<IformItem<{ filed: ItemType }>[]>([
     {
         filed: 'input',
         label: '输入框-文本',
@@ -41,7 +41,7 @@ export const formConfig = ref<IformItem[]>([
         }
     },
     {
-        filed: 'select-tree',
+        filed: 'treeSelect',
         label: '树形下拉框',
         type: 'treeSelect',
         span: 12,

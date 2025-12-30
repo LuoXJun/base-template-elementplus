@@ -1,5 +1,5 @@
 <template>
-    <div class="basePagination">
+    <div class="base-pagination">
         <el-pagination
             v-model:current-page="pageInfo.pageNum"
             v-model:page-size="pageInfo.pageSize"
@@ -57,7 +57,7 @@ const handleCurrentChange = (val: number) => {
 </script>
 
 <style scoped lang="scss">
-.basePagination {
+.base-pagination {
     display: flex;
     justify-content: flex-end;
     margin-top: 12px;

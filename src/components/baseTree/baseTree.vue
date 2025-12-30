@@ -13,7 +13,7 @@
             :expand-on-click-node="expandOnClick"
             :filter-node-method="filterNodeMethod"
             @node-click="handleNodeClick"
-            @check="(data, nodes) => emits('check', data, nodes)"
+            @check="handleNodeCheck"
         >
             <template #="{ node, data }">
                 <slot :row="{ node, data }">
@@ -24,17 +24,23 @@
     </div>
 </template>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends Record<string, any>">
 import { checkKeysExist } from '@/utils/common';
-import type { FilterNodeMethodFunction, RenderContentContext, TreeNodeData } from 'element-plus';
+import type { CheckedInfo, FilterNodeMethodFunction, TreeNodeData, TreeNode } from 'element-plus';
 import { type PropType } from 'vue';
 
-const emits = defineEmits(['handleClickTree', 'check']);
+const treeData = defineModel<T[]>({ default: [] });
+
+defineSlots<{
+    [key: string]: (props: { row: { data: T; node: TreeNodeAuto<T> } }) => any;
+}>();
+
+const emits = defineEmits<{
+    handleClickTree: [params: { data: T; node: TreeNode }];
+    check: [data: T, nodes: CheckedInfo];
+}>();
+
 defineProps({
-    treeData: {
-        type: Array as PropType<TreeNodeData[]>,
-        default: () => []
-    },
     defaultProps: {
         type: Object as PropType<IbaseTree>,
         default: () => ({ label: 'label', children: 'children' })
@@ -71,11 +77,12 @@ defineProps({
 
 const treeRef = useTemplateRef('treeRef');
 
-const handleNodeClick = (
-    node: RenderContentContext['node'],
-    data: RenderContentContext['data']
-) => {
+const handleNodeClick = (data: T, node: TreeNode) => {
     emits('handleClickTree', { data, node });
+};
+
+const handleNodeCheck = (data: T, nodes: CheckedInfo) => {
+    emits('check', data, nodes);
 };
 
 const getNodeDetail = (type: TTreeMethods, params?: TTreeMethodsParams) => {
@@ -158,9 +165,9 @@ const getNodeDetail = (type: TTreeMethods, params?: TTreeMethodsParams) => {
 defineExpose({ getNodeDetail });
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .base-tree {
-    .el-tree {
+    :deep(.el-tree) {
         background: unset;
         .el-tree-node__content {
             height: 32px;

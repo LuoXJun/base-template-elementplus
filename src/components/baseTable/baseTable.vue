@@ -16,7 +16,7 @@
                 type="selection"
                 width="80"
                 align="center"
-                label-class-name="checkAll"
+                label-class-name="check-all"
             />
             <el-table-column v-if="index" type="index" width="70" label="序号" align="center">
                 <template #default="scope">
@@ -33,7 +33,10 @@
                     v-bind="item.options"
                 >
                     <template #default="scope">
-                        <slot :name="item.filed" :scope="scope">
+                        <slot
+                            :name="item.filed"
+                            :scope="{ row: scope.row, $index: scope.$index, column: item.filed }"
+                        >
                             {{ scope.row[item.filed] ?? '/' }}
                         </slot>
                     </template>
@@ -48,12 +51,21 @@
     </div>
 </template>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends Record<string, any>">
 import { type PropType } from 'vue';
-import basePagination from '../base-pagination/base-pagination.vue';
-const emits = defineEmits(['selected', 'currentChange', 'onPageChange']);
+import basePagination from '../basePagination/basePagination.vue';
 
-const tableData = defineModel<Record<string, any>[]>({ default: [] });
+const emits = defineEmits<{
+    selected: [params: { type: 'change' | 'select' | 'selectAll'; value: T[]; row?: T }];
+    currentChange: [row: T];
+    onPageChange: [];
+}>();
+
+defineSlots<{
+    [key: string]: (props: { scope: { row: T; $index: number; column: string } }) => any;
+}>();
+
+const tableData = defineModel<T[]>({ default: [] });
 const pageInfo = defineModel<PageInfo>('pageInfo', {
     default: {
         pageSize: 10,
@@ -92,62 +104,66 @@ const props = defineProps({
 });
 const multipleTableRef = useTemplateRef('multipleTableRef');
 
-const handleSelectionChange = (value: any) => {
+const handleSelectionChange = (value: T[]) => {
     emits('selected', { value, type: 'change' });
 };
-const select = (value: any, row: any) => {
+const select = (value: T[], row: T) => {
     emits('selected', { value, row, type: 'select' });
 };
-const selectAll = (value: any) => {
+const selectAll = (value: T[]) => {
     emits('selected', { value, type: 'selectAll' });
 };
 
-const toggleRowSelection = (row: Record<string, any>) => {
+const toggleRowSelection = (row: T) => {
     multipleTableRef.value!.toggleRowSelection(row, true);
 };
-
 // 高亮行改变时
-const currentChange = (row: Record<string, any>) => {
+const currentChange = (row: T) => {
     emits('currentChange', row);
 };
 
 defineExpose({ toggleRowSelection });
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .base-table {
     width: 100%;
     max-height: 100%;
-    .checkAll {
-        position: relative;
-        text-align: left !important;
-    }
+    :deep(.el-table) {
+        .check-all {
+            position: relative;
+            text-align: left !important;
+            & .cell::after {
+                content: '全选';
+                color: #909399;
+                font-size: 13px;
+                font-weight: bold;
+                display: block;
+                position: absolute;
+                z-index: 1;
+                left: 35px;
+            }
+        }
 
-    .checkAll .cell::after {
-        color: #909399;
-        font-size: 13px;
-        font-weight: bold;
-        content: '全选';
-        display: block;
-        position: absolute;
-        z-index: 1;
-        left: 35px;
-    }
+        .cell,
+        .el-button {
+            font-family: 'PingFang SC';
+            font-size: 14px;
+            font-style: normal;
+            font-weight: 400;
+            line-height: 24px; /* 171.429% */
+        }
 
-    .cell,
-    .el-button {
-        font-family: 'PingFang SC';
-        font-size: 14px;
-        font-style: normal;
-        font-weight: 400;
-        line-height: 24px; /* 171.429% */
-    }
-
-    thead .cell {
-        color: #757f96;
-    }
-    tbody .cell {
-        color: #131414;
+        thead {
+            tr,
+            th,
+            .cell {
+                color: #757f96;
+            }
+        }
+        tbody .cell {
+            color: #131414;
+        }
     }
 }
 </style>

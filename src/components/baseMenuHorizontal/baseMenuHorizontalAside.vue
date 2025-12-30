@@ -1,5 +1,5 @@
 <template>
-    <div class="baseMenuHorizontalAside">
+    <div class="base-menu-horizontal-aside">
         <template
             v-for="item in list.sort((a, b) => {
                 return (a.meta!.sort as number) - (b.meta!.sort as number);
@@ -48,7 +48,7 @@ const props = defineProps({
 </script>
 
 <style lang="scss" scoped>
-.baseMenuHorizontalAside {
+.base-menu-horizontal-aside {
     height: 100%;
 }
 </style>

@@ -1,5 +1,31 @@
-# Vue 3 + TypeScript + Vite
+# 代码规范
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+## 添加ts-nocheck头部的文件为三大中心迁移的代码
 
-Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
+## 类型文件规范
+
+### 命名规则
+
+- 第三方模块没有类型说明文件时，添加模块声明以d.ts结尾
+- 非外部模块的声明文件，以type.d.ts作为结尾
+- 类型接口的名称以后端请求接口前缀开始--采用PascalCase法
+- 对于字典类，使用type以键值对的形式进行声明,并且名称为全大写，分隔符为下划线
+
+```js
+type SEX_TYPE = {
+    '3001': '男';
+    '3002': '女';
+};
+```
+
+### 分类
+
+- 声明文件以api请求作为分类依据
+  - 如`/document/info/page`接口地址对应的类型名称为`DocumentReturns`
+- 新增、编辑的参数和查看详情以及分页返回的数据一般是保持一致的，可以使用同一个类型声明文件，对于需要新增自定义参数，可在后继续添加并注释为自定义参数
+
+## 组件规范
+
+### 命名规范
+
+- 通用组件以base开头，使用驼峰命名

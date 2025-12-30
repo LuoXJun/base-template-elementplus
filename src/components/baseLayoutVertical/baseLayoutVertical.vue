@@ -1,5 +1,5 @@
 <template>
-    <div class="baseLayoutVertical">
+    <div class="base-layout-vertical">
         <div class="lxj-header">顶部导航栏</div>
         <div class="lxj-main">
             <div class="lxj-aside">
@@ -23,7 +23,7 @@ const store = useMenuStore();
 </script>
 
 <style scoped lang="scss">
-.baseLayoutVertical {
+.base-layout-vertical {
     height: 100%;
     color: #000;
     height: 100%;

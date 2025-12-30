@@ -1,11 +1,11 @@
 <template>
-    <div class="baseHorizontalMenuHeader">
-        <div class="menuPart">
+    <div class="base-horizontal-menu-header">
+        <div class="menu-part">
             <template v-for="menu in menus" :key="menu.name">
                 <div v-if="!menu.isHidden" class="lxj-menu-item" @click="goPath(menu)">
                     <span
                         :class="{
-                            isSelected: store.currentMenu.path?.includes(menu.path)
+                            'is-selected': store.currentMenu.path?.includes(menu.path)
                         }"
                     >
                         {{ menu.title }}
@@ -47,14 +47,14 @@ const goPath = (menu: RouteOptions) => {
 </script>
 
 <style scoped lang="scss">
-.baseHorizontalMenuHeader {
+.base-horizontal-menu-header {
     height: 100%;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 12px;
     box-sizing: border-box;
-    .menuPart {
+    .menu-part {
         height: 100%;
         display: flex;
         align-items: center;
@@ -68,7 +68,7 @@ const goPath = (menu: RouteOptions) => {
                 border-radius: 8px;
                 display: inline-block;
                 padding: 8px 12px;
-                &.isSelected {
+                &.is-selected {
                     color: $primary;
                 }
             }

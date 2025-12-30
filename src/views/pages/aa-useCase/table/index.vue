@@ -23,8 +23,8 @@
 </template>
 
 <script setup lang="ts">
-import baseTable from '@/components/base-table/base-table.vue';
-import baseList from '@/components/base-list/base-list.vue';
+import baseTable from '@/components/baseTable/baseTable.vue';
+import baseList from '@/components/baseList/baseList.vue';
 
 import { tableColumnConfig } from './config';
 
@@ -44,7 +44,8 @@ const tableData = ref([
     {
         num1: '测试1',
         num2: '测试2',
-        num3: '测试3'
+        num3: '测试3',
+        num4: '测试4',
     }
 ]);
 

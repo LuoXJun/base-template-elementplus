@@ -2,7 +2,11 @@
     <el-row>
         <el-col :span="8">
             树
-            <baseTree :treeData="data" />
+            <baseTree v-model="data" show-checkbox>
+                <template #="{ row: { data, node } }">
+                    <span>{{ data.label }}</span>
+                </template>
+            </baseTree>
         </el-col>
         <el-col :span="8">
             获取选中项并保持原有结构
@@ -28,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import baseTree from '@/components/baseTree/base-tree.vue';
+import baseTree from '@/components/baseTree/baseTree.vue';
 import baseTransfer from '@/components/baseTransfer/baseTransfer.vue';
 import type { FilterNodeMethodFunction } from 'element-plus';
 

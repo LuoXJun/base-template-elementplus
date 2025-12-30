@@ -32,7 +32,7 @@
             <div class="transfer-tree-content">
                 <baseTree
                     ref="treeRef"
-                    :tree-data="treeData"
+                    v-model="treeData"
                     show-checkbox
                     expand-on-click
                     :node-key="nodeKey ? nodeKey : autoProps.label"
@@ -73,7 +73,7 @@
             <div class="transfer-tree-content">
                 <baseTree
                     ref="treeRef1"
-                    :tree-data="checkedDataSet"
+                    v-model="checkedDataSet"
                     :default-expand-all="true"
                     expand-on-click
                     :filter-node-method="filterNode"
@@ -104,8 +104,8 @@
     </div>
 </template>
 
-<script setup lang="ts">
-import baseTree from '../baseTree/base-tree.vue';
+<script setup lang="ts" generic="T extends Record<string, any>">
+import baseTree from '../baseTree/baseTree.vue';
 import type {
     CheckboxValueType,
     FilterNodeMethodFunction,
@@ -117,15 +117,13 @@ import type { PropType } from 'vue';
 import { useDeepClone } from '@/utils/useDeepClone';
 import { filterTree } from '@/utils/getTreeNodes';
 import { Search } from '@element-plus/icons-vue';
-const emits = defineEmits(['onCheck']);
+const emits = defineEmits<{
+    onCheck: [data: TreeNodeData[]];
+}>();
+
+const treeData = defineModel<T[]>({ default: [] });
 
 const props = defineProps({
-    treeData: {
-        type: Array as PropType<Array<Record<string, any>>>,
-        default: () => {
-            return [];
-        }
-    },
     autoProps: {
         type: Object as PropType<{ label: string }>,
         default: () => {
@@ -166,7 +164,7 @@ const indeterminate = ref(false);
 const checkedLength = ref(0);
 
 watch(
-    () => props.treeData,
+    () => treeData,
     () => {
         checkedDataSet.value = [];
     }
@@ -192,7 +190,7 @@ watch(
  * 获取叶子节点数量
  * */
 const getNodeKeys = (data: any[]) => {
-    if (!data) data = props.treeData;
+    if (!data) data = treeData.value;
     const key = props.nodeKey ?? props.autoProps.label;
     const keys: string[] = [];
     data.forEach((v) => {
@@ -217,7 +215,7 @@ const getCheckedData = () => {
 
     if (props.type === 'tree') {
         // 树形结构保持原样
-        checkedDataSet.value = filterTree(useDeepClone(props.treeData), checkedKeys, key);
+        checkedDataSet.value = filterTree(useDeepClone(treeData.value), checkedKeys, key);
     } else {
         checkedDataSet.value = treeRef.value!.getNodeDetail('getCheckedNodes', {
             leafOnly: true,
@@ -226,12 +224,12 @@ const getCheckedData = () => {
     }
 
     //设置半选状态
-    if (checkedKeys.length !== getNodeKeys(props.treeData).length && checkedKeys.length !== 0) {
+    if (checkedKeys.length !== getNodeKeys(treeData.value).length && checkedKeys.length !== 0) {
         indeterminate.value = true;
     } else indeterminate.value = false;
 
     //设置全选状态
-    if (checkedKeys.length === getNodeKeys(props.treeData).length) {
+    if (checkedKeys.length === getNodeKeys(treeData.value).length) {
         isAllSelected.value = true;
     } else isAllSelected.value = false;
 
@@ -252,7 +250,7 @@ const removeItem = (data: TreeNodeData) => {
 const allSelected = (check: CheckboxValueType) => {
     indeterminate.value = false;
 
-    const keys = getNodeKeys(props.treeData);
+    const keys = getNodeKeys(treeData.value);
     if (check) {
         treeRef.value?.getNodeDetail('setCheckedKeys', { keys, leafOnly: true });
     } else {

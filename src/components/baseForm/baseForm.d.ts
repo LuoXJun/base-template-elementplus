@@ -1,5 +1,5 @@
 // 允许的表单元素
-type itemType =
+type ItemType =
     | 'input'
     | 'select'
     | 'treeSelect'
@@ -67,11 +67,16 @@ type Rules = (RulesRequired | RulesAuto | RulesMinx | RulesCustom)[];
 type TSelectTreeType = { label: string; value: string | number; children?: TSelectTreeType[] };
 
 // 单个表单元素属性
-interface IformItem {
+interface IformItem<
+    T = {
+        data?: TSelectTreeType[];
+        filed: string;
+    }
+> {
     /**prop、元素绑定的key、插槽名字*/
-    filed: string;
+    filed: T['filed'];
     label: string;
-    type: itemType;
+    type: ItemType;
     labelWidth?: string;
     labelPosition?: 'left' | 'right' | 'top';
     rules?: Rules;
@@ -129,7 +134,7 @@ interface IformItem {
             //是否允许用户创建新条目， 只有当 filterable 设置为 true 时才会生效。
             allowCreate?: boolean;
         };
-        data?: TSelectTreeType[];
+        data?: 'data' extends keyof T ? T['data'] : TSelectTreeType[];
         props?: Record<string, string>;
     };
     date?: {
