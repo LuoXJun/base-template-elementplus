@@ -1,5 +1,5 @@
 <template>
-    <div class="baseLayoutHorizontal" v-if="$route.name !== 'homePage'">
+    <div class="baseLayoutHorizontal">
         <div class="lxj-header">
             <baseMenuHorizontalHeader />
         </div>
@@ -16,9 +16,6 @@
                 <router-view></router-view>
             </div>
         </div>
-    </div>
-    <div class="cesiumContainer" v-else>
-        <router-view></router-view>
     </div>
 </template>
 

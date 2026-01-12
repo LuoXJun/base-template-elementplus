@@ -182,7 +182,7 @@ const draw = (row: IToolBar) => {
         drawMethods.clear();
     } else if (row.type === 'reset') {
         store.Viewer?.camera.setView({
-            destination: Cesium.Rectangle.fromDegrees(73, 18, 135, 53)
+            destination: Cesium.Rectangle.fromDegrees(90, 25, 110, 35)
         });
     } else {
         store.restoreScreenSpaceHandler();

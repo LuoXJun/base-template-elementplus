@@ -1,3 +1,5 @@
+import { createBillboard } from './createBillboard';
+
 const lineColor = Cesium.Color.fromCssColorString('#f5ad47');
 const fillColor = Cesium.Color.CYAN.withAlpha(0.4);
 const lineWidth = 2;
@@ -100,23 +102,29 @@ export class RenderGeoJsonByGround {
         if (coordinates.length < 2) return;
 
         const [lon, lat, height = 0] = coordinates;
+        const canvas = await createBillboard(properties!.Name);
 
         // 使用 Entity API 渲染点
         const point = this.viewer.entities.add({
             position: Cesium.Cartesian3.fromDegrees(lon, lat, height),
-            point: {
-                pixelSize: this.options.pointSize,
-                color: this.options.pointColor,
-                outlineColor: Cesium.Color.WHITE,
-                outlineWidth: lineWidth
-            },
-            label: properties.name
-                ? {
-                      text: properties.name,
-                      font: '12px sans-serif',
-                      pixelOffset: new Cesium.Cartesian2(0, -15)
-                  }
-                : undefined
+            // point: {
+            //     pixelSize: this.options.pointSize,
+            //     color: this.options.pointColor,
+            //     outlineColor: Cesium.Color.WHITE,
+            //     outlineWidth: lineWidth
+            // },
+            billboard: {
+                verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+                image: canvas
+            }
+            // label: properties.name
+            //     ? {
+            //           text: properties.name,
+            //           font: '12px sans-serif',
+            //           pixelOffset: new Cesium.Cartesian2(0, -15)
+            //       }
+            //     : undefined
         });
 
         this.entities.push(point);
@@ -752,4 +760,147 @@ export const removeHeightFromGeoJSON = (geoJson: FeatureCollection) => {
     }
 
     return processed;
+};
+
+/**通过entity转geojson--rectangle--polygon*/
+export const entity2Geojson = (entity: Cesium.Entity): FeatureCollection => {
+    let positions: Cesium.Cartesian3[] = [];
+    if (entity.rectangle) {
+        var rect = entity.rectangle.coordinates!.getValue(Cesium.JulianDate.now());
+        positions.push(Cesium.Cartesian3.fromRadians(rect.west, rect.north)); // 西北
+        positions.push(Cesium.Cartesian3.fromRadians(rect.east, rect.north)); // 东北
+        positions.push(Cesium.Cartesian3.fromRadians(rect.east, rect.south)); // 东南
+        positions.push(Cesium.Cartesian3.fromRadians(rect.west, rect.south)); // 西南
+        positions.push(Cesium.Cartesian3.fromRadians(rect.west, rect.north)); // 闭合多边形
+    }
+
+    if (entity.polygon) {
+        var hierarchy = entity.polygon.hierarchy!.getValue(Cesium.JulianDate.now());
+
+        positions = hierarchy.positions;
+    }
+
+    // 将Cartesian3坐标转换为经纬度坐标
+    var coordinates: Position[] = positions.map(function (position) {
+        var cartographic = Cesium.Cartographic.fromCartesian(position);
+        var longitude = Cesium.Math.toDegrees(cartographic.longitude);
+        var latitude = Cesium.Math.toDegrees(cartographic.latitude);
+
+        // GeoJSON通常使用[经度, 纬度]格式，忽略高度
+        return [longitude, latitude];
+    });
+
+    // 构建GeoJSON Feature对象
+    var geoJSON = {
+        type: 'FeatureCollection' as const,
+        features: [
+            {
+                type: 'Feature' as const,
+                geometry: {
+                    type: 'Polygon' as const,
+                    coordinates: [coordinates]
+                },
+                properties: {
+                    name: entity.name || entity.id || 'Unnamed Entity',
+                    description: entity.description ? entity.description.getValue() : ''
+                }
+            }
+        ]
+    };
+
+    return geoJSON;
+};
+
+/**
+ * 从 GeoJSON FeatureCollection 中提取边界线并生成新的 GeoJSON
+ * @param geojsonData 原始 GeoJSON 数据
+ * @returns 包含边界线的新 GeoJSON
+ */
+export const extractBoundariesAsGeoJSON = (geojsonData: FeatureCollection): FeatureCollection => {
+    const boundaryFeatures: Feature[] = [];
+
+    for (const feature of geojsonData.features) {
+        const geometry = feature.geometry;
+        const properties = feature.properties || {};
+
+        if (geometry?.type === 'Polygon') {
+            // 处理 Polygon 类型，提取外边界作为 LineString
+            const polygon = geometry as Polygon;
+            for (let i = 0; i < polygon.coordinates.length; i++) {
+                const ring = polygon.coordinates[i];
+                const ringType = i === 0 ? 'outer' : 'inner';
+
+                // 确保环是闭合的
+                if (ring.length > 0) {
+                    const closedRing = [...ring];
+                    if (
+                        closedRing[0][0] !== closedRing[closedRing.length - 1][0] ||
+                        closedRing[0][1] !== closedRing[closedRing.length - 1][1]
+                    ) {
+                        closedRing.push([...closedRing[0]]); // 闭合环
+                    }
+
+                    // 创建边界线要素
+                    const boundaryFeature: Feature = {
+                        type: 'Feature',
+                        geometry: {
+                            type: 'LineString',
+                            coordinates: closedRing
+                        },
+                        properties: {
+                            ...properties,
+                            boundaryType: ringType,
+                            originalFeatureType: 'Polygon'
+                        }
+                    };
+
+                    boundaryFeatures.push(boundaryFeature);
+                }
+            }
+        } else if (geometry?.type === 'MultiPolygon') {
+            // 处理 MultiPolygon 类型，提取所有多边形的边界
+            const multiPolygon = geometry as MultiPolygon;
+
+            for (let polyIndex = 0; polyIndex < multiPolygon.coordinates.length; polyIndex++) {
+                const polygon = multiPolygon.coordinates[polyIndex];
+
+                for (let ringIndex = 0; ringIndex < polygon.length; ringIndex++) {
+                    const ring = polygon[ringIndex];
+                    const ringType = ringIndex === 0 ? 'outer' : 'inner';
+
+                    if (ring.length > 0) {
+                        const closedRing = [...ring];
+                        if (
+                            closedRing[0][0] !== closedRing[closedRing.length - 1][0] ||
+                            closedRing[0][1] !== closedRing[closedRing.length - 1][1]
+                        ) {
+                            closedRing.push([...closedRing[0]]); // 闭合环
+                        }
+
+                        // 创建边界线要素
+                        const boundaryFeature: Feature = {
+                            type: 'Feature',
+                            geometry: {
+                                type: 'LineString',
+                                coordinates: closedRing
+                            },
+                            properties: {
+                                ...properties,
+                                boundaryType: ringType,
+                                originalFeatureType: 'MultiPolygon',
+                                polygonIndex: polyIndex
+                            }
+                        };
+
+                        boundaryFeatures.push(boundaryFeature);
+                    }
+                }
+            }
+        }
+    }
+
+    return {
+        type: 'FeatureCollection',
+        features: boundaryFeatures
+    };
 };

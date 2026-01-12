@@ -1,13 +1,5 @@
 export const routeConfig: RouteOptions[] = [
     {
-        path: '/aa-useCase',
-        sort: 1,
-        component: 'aa-useCase',
-        name: 'useCase',
-        type: 'link',
-        title: '组件使用案例'
-    },
-    {
         path: '/',
         sort: 0,
         component: 'homePage',
@@ -15,58 +7,45 @@ export const routeConfig: RouteOptions[] = [
         type: 'link',
         title: '主页'
     },
-
     {
-        path: '/c',
-        sort: 2,
-        component: 'c',
-        name: 'C',
+        path: 'shader',
+        sort: 1,
+        component: 'shader',
+        name: 'shader',
         type: 'menu',
-        title: '多级菜单/C',
+        title: '着色器',
         children: [
             {
-                path: 'c1',
+                path: 'radar',
                 sort: 0,
-                component: 'c1',
-                name: 'C1',
-                type: 'menu',
-                title: 'c1',
-                children: [
-                    {
-                        path: 'c11',
-                        sort: 0,
-                        component: 'c11',
-                        name: 'C11',
-                        type: 'menu',
-                        title: 'c11',
-                        children: [
-                            {
-                                path: 'c111',
-                                sort: 0,
-                                component: 'c111',
-                                name: 'C111',
-                                type: 'link',
-                                title: 'c111'
-                            },
-                            {
-                                path: 'c112',
-                                sort: 0,
-                                component: 'c112',
-                                name: 'C112',
-                                type: 'link',
-                                title: 'c112'
-                            }
-                        ]
-                    },
-                    {
-                        path: 'd',
-                        sort: 0,
-                        component: 'd',
-                        name: 'd',
-                        type: 'link',
-                        title: 'd'
-                    }
-                ]
+                component: 'shader/radar',
+                name: 'radar',
+                type: 'link',
+                title: '雷达特效'
+            },
+            {
+                path: 'flowline',
+                sort: 1,
+                component: 'shader/flowline',
+                name: 'flowline',
+                type: 'link',
+                title: '流动线特效'
+            },
+            {
+                path: 'rain',
+                sort: 2,
+                component: 'shader/rain',
+                name: 'rain',
+                type: 'link',
+                title: '下雨后处理'
+            },
+            {
+                path: 'snow',
+                sort: 2,
+                component: 'shader/snow',
+                name: 'snow',
+                type: 'link',
+                title: '下雪后处理'
             }
         ]
     }

@@ -59,6 +59,7 @@ router.beforeEach((to, _, next) => {
         });
         return next(to.fullPath);
     }
+
     return next();
 });
 

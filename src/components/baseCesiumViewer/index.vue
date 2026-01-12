@@ -32,6 +32,9 @@ const init = async () => {
         shouldAnimate: false, //是否显示动画
         navigationHelpButton: false //是否显示右上角的帮助按钮
     });
+    viewer.camera.setView({
+        destination: Cesium.Rectangle.fromDegrees(60, 10, 150, 50)
+    });
 
     store.Viewer = markRaw(viewer);
 
