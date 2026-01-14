@@ -9,7 +9,7 @@ import baseCesiumViewer from '@/components/baseCesiumViewer/index.vue';
 
 import { useCesiumViewer } from '@/stores/useCesiumViewer';
 import { SquareEffect } from '@/utils/cesiumTools/SquareEffect';
-import shader from '@/shaders/RadarEffEct.glsl?raw';
+import shader from '@/shaders/RadarEffEct.js';
 import GUI from 'lil-gui';
 
 const store = useCesiumViewer();
@@ -59,6 +59,10 @@ onMounted(() => {
         material.uniforms.uRingCount = controls.count;
         material.uniforms.uSpeed = controls.speed;
     });
+});
+
+onUnmounted(() => {
+    gui.destroy();
 });
 </script>
 

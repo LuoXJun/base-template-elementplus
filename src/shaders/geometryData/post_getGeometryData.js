@@ -1,3 +1,8 @@
+// Auto-generated from post_getGeometryData.glsl
+// Hash: 125925e4
+// Generated at: 2026-01-14T01:32:31.629Z
+
+const POST_GETGEOMETRYDATA_SOURCE = `
 uniform sampler2D depthTexture;
 in vec2 v_textureCoordinates;
 
@@ -281,3 +286,70 @@ PostGeometryData getGeometryData(in bool sample9) {
 PostGeometryData getGeometryData() {
     return getGeometryData(true);
 }
+`;
+
+// Uniform 信息
+export const POST_GETGEOMETRYDATA_UNIFORMS = [
+  {
+    "type": "sampler2D",
+    "name": "depthTexture"
+  }
+];
+
+// Attribute 信息
+export const POST_GETGEOMETRYDATA_ATTRIBUTES = [];
+
+// Shader 类
+export class PostGetGeometryDataShader {
+  constructor() {
+    this.source = POST_GETGEOMETRYDATA_SOURCE;
+    this.uniforms = POST_GETGEOMETRYDATA_UNIFORMS;
+    this.attributes = POST_GETGEOMETRYDATA_ATTRIBUTES;
+    this.hash = '125925e4';
+  }
+  
+  getVertexShader() {
+    return this.source;
+  }
+  
+  getFragmentShader() {
+    return this.source;
+  }
+  
+  // 创建Cesium CustomShader配置
+  toCesiumShader(uniformValues = {}) {
+    const uniforms = {};
+    this.uniforms.forEach(u => {
+      uniforms[u.name] = {
+        value: uniformValues[u.name] || this.parseDefaultValue(u.defaultValue),
+        type: this.mapGlslTypeToCesium(u.type)
+      };
+    });
+    
+    return {
+      vertexShaderText: this.source,
+      fragmentShaderText: this.source,
+      uniforms
+    };
+  }
+  
+  parseDefaultValue(defaultValue) {
+    if (!defaultValue) return null;
+    // 这里可以添加类型解析逻辑
+    return defaultValue;
+  }
+  
+  mapGlslTypeToCesium(glslType) {
+    const typeMap = {
+      'float': 'FLOAT',
+      'vec2': 'VEC2',
+      'vec3': 'VEC3',
+      'vec4': 'VEC4',
+      'mat4': 'MAT4',
+      'sampler2D': 'SAMPLER_2D'
+    };
+    return typeMap[glslType] || 'FLOAT';
+  }
+}
+
+export default POST_GETGEOMETRYDATA_SOURCE;

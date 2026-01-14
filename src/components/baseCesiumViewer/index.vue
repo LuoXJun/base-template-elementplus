@@ -10,7 +10,10 @@
 <script setup lang="ts">
 import toolsBar from './components/toolsBar.vue';
 import { useCesiumViewer } from '@/stores/useCesiumViewer';
+import { RenderGeoJsonByGroundByMerge } from '@/utils/cesium-utils';
+import shp from 'shpjs';
 const store = useCesiumViewer();
+let loadGeojsonTool: RenderGeoJsonByGroundByMerge;
 
 const initHandler = (viewer: Cesium.Viewer): Cesium.ScreenSpaceEventHandler => {
     return new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
@@ -49,6 +52,12 @@ const init = async () => {
 
     // 初始化鼠标控制器
     store.screenSpaceHandler = markRaw(initHandler(viewer));
+
+    intGuiYang();
+
+    viewer.scene.camera.moveEnd.addEventListener(() => {
+        console.log(viewer.camera);
+    });
 };
 
 const restore = () => {
@@ -57,6 +66,32 @@ const restore = () => {
 
     // 释放场景
     store.Viewer && store.Viewer.destroy();
+};
+
+/**加载贵阳矢量白模*/
+
+const intGuiYang = () => {
+    if (!loadGeojsonTool)
+        loadGeojsonTool = new RenderGeoJsonByGroundByMerge(
+            store.Viewer!,
+            {},
+            {
+                extrudedHeight: 2000,
+                extrudedFillColor: Cesium.Color.WHITE.withAlpha(0.5),
+                outlineOnExtruded: true,
+                randomHeight: true
+            }
+        );
+
+    fetch('/矢量建筑范围/贵阳.zip').then(async (res) => {
+        res.arrayBuffer().then((data) => {
+            shp(data).then(async (geoJson) => {
+                //
+                (geoJson as any as FeatureCollection).features.length = 5000;
+                loadGeojsonTool.renderGeoJSON(geoJson as FeatureCollection);
+            });
+        });
+    });
 };
 
 onMounted(() => {

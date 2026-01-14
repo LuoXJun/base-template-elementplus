@@ -448,6 +448,688 @@ export class RenderGeoJsonByGround {
 }
 
 /**
+ * @description 自定义绘制geojson格式文件--合并几何批次并支持拉伸面
+ * */
+export class RenderGeoJsonByGroundByMerge {
+    private viewer: Cesium.Viewer;
+    private scene: Cesium.Scene;
+    private fillPrimitive: Cesium.GroundPrimitive | null = null;
+    private extrudedFillPrimitive: Cesium.Primitive | null = null; // 新增：拉伸面
+    private strokePrimitive: Cesium.GroundPolylinePrimitive | null = null;
+    private extrudedStrokePrimitive: Cesium.Primitive | null = null; // 新增：拉伸边框
+
+    private fillGeometryInstances: Cesium.GeometryInstance[] = [];
+    private extrudedFillGeometryInstances: Cesium.GeometryInstance[] = []; // 新增：拉伸几何实例
+    private strokeGeometryInstances: Cesium.GeometryInstance[] = [];
+    private extrudedStrokeGeometryInstances: Cesium.GeometryInstance[] = []; // 新增：拉伸边框几何实例
+
+    entities: Cesium.Entity[] = [];
+
+    private options: RenderOptions;
+    private featureCount: number = 0;
+
+    // 新增：拉伸相关选项
+    private extrusionOptions: {
+        extrudedHeight?: number; // 拉伸高度（米）
+        extrudedHeightProperty?: string; // 从属性中获取高度的字段名
+        baseHeight?: number; // 基础高度（米）
+        baseHeightProperty?: string; // 从属性中获取基础高度的字段名
+        sideColor?: Cesium.Color; // 侧面颜色
+        extrudedFillColor?: Cesium.Color; // 拉伸后顶面颜色
+        extrudeHoles?: boolean; // 是否拉伸内环（洞）
+        outlineOnExtruded?: boolean; // 是否显示拉伸后的边框
+        randomHeight?: boolean;
+    };
+
+    constructor(
+        viewer: Cesium.Viewer,
+        options?: Partial<RenderOptions>,
+        extrusionOptions?: typeof this.extrusionOptions
+    ) {
+        this.viewer = viewer;
+        this.scene = viewer.scene;
+        this.options = {
+            fillColor: options?.fillColor || fillColor,
+            strokeColor: options?.strokeColor || lineColor,
+            strokeWidth: options?.strokeWidth || lineWidth,
+            strokeHoles: options?.strokeHoles ?? true,
+            pointColor: options?.pointColor || Cesium.Color.RED,
+            pointSize: options?.pointSize || 10,
+            polylineColor: options?.polylineColor || lineColor,
+            polylineWidth: options?.polylineWidth || lineWidth,
+            ...options
+        };
+
+        // 设置默认拉伸选项
+        this.extrusionOptions = {
+            extrudedHeight: extrusionOptions?.extrudedHeight || 100,
+            extrudedHeightProperty: extrusionOptions?.extrudedHeightProperty || undefined,
+            baseHeight: extrusionOptions?.baseHeight || 0,
+            baseHeightProperty: extrusionOptions?.baseHeightProperty || 'baseHeight',
+            sideColor: extrusionOptions?.sideColor || Cesium.Color.GRAY.withAlpha(0.7),
+            extrudedFillColor: extrusionOptions?.extrudedFillColor || this.options.fillColor,
+            extrudeHoles: extrusionOptions?.extrudeHoles ?? true,
+            outlineOnExtruded: extrusionOptions?.outlineOnExtruded ?? true,
+            randomHeight: extrusionOptions?.randomHeight || false,
+            ...extrusionOptions
+        };
+    }
+
+    /**
+     * 渲染所有 GeoJSON 要素
+     */
+    async renderGeoJSON(geoJson: FeatureCollection | Feature) {
+        const features = geoJson.type === 'FeatureCollection' ? geoJson.features : [geoJson];
+
+        // 重置几何实例
+        this.resetGeometryInstances();
+
+        // 收集所有几何实例
+        for (const feature of features) {
+            await this.collectFeatureGeometry(feature);
+        }
+
+        // 批量创建 Primitive
+        await this.createBatchPrimitives();
+    }
+
+    /**
+     * 重置几何实例集合
+     */
+    private resetGeometryInstances() {
+        this.fillGeometryInstances = [];
+        this.extrudedFillGeometryInstances = [];
+        this.strokeGeometryInstances = [];
+        this.extrudedStrokeGeometryInstances = [];
+        this.featureCount = 0;
+
+        // 清除现有的 Primitive
+        this.clearBatchPrimitives();
+    }
+
+    /**
+     * 清除批量 Primitive
+     */
+    private clearBatchPrimitives() {
+        const primitives = [
+            this.fillPrimitive,
+            this.extrudedFillPrimitive,
+            this.strokePrimitive,
+            this.extrudedStrokePrimitive
+        ];
+
+        primitives.forEach((primitive) => {
+            if (primitive) {
+                this.scene.primitives.remove(primitive);
+                if (!primitive.isDestroyed()) {
+                    primitive.destroy();
+                }
+            }
+        });
+
+        this.fillPrimitive = null;
+        this.extrudedFillPrimitive = null;
+        this.strokePrimitive = null;
+        this.extrudedStrokePrimitive = null;
+    }
+
+    /**
+     * 收集要素几何数据
+     */
+    private async collectFeatureGeometry(feature: Feature) {
+        const geometry = feature.geometry;
+        const properties = feature.properties || {};
+        if (!geometry) return;
+
+        try {
+            switch (geometry.type) {
+                case 'Point':
+                    await this.collectPoint(geometry.coordinates, properties);
+                    break;
+                case 'MultiPoint':
+                    for (const coord of geometry.coordinates) {
+                        await this.collectPoint(coord, properties);
+                    }
+                    break;
+                case 'LineString':
+                    this.collectLineString(geometry.coordinates, properties);
+                    break;
+                case 'MultiLineString':
+                    for (const line of geometry.coordinates) {
+                        this.collectLineString(line, properties);
+                    }
+                    break;
+                case 'Polygon':
+                    this.collectPolygon(geometry.coordinates, properties);
+                    break;
+                case 'MultiPolygon':
+                    for (const polygon of geometry.coordinates) {
+                        this.collectPolygon(polygon, properties);
+                    }
+                    break;
+                case 'GeometryCollection':
+                    for (const geom of geometry.geometries) {
+                        await this.collectFeatureGeometry({
+                            type: 'Feature',
+                            geometry: geom,
+                            properties: properties
+                        });
+                    }
+                    break;
+                default:
+                    // @ts-ignore
+                    console.warn(`不支持的类型: ${geometry.type}`);
+            }
+        } catch (error) {
+            console.error(`收集要素几何时出错:`, error, feature);
+        }
+    }
+
+    /**
+     * 收集点数据（仍然使用 Entity）
+     */
+    private async collectPoint(coordinates: number[], properties: any) {
+        if (coordinates.length < 2) return;
+
+        const [lon, lat, height = 0] = coordinates;
+        const canvas = await createBillboard(properties.Name);
+
+        const point = this.viewer.entities.add({
+            position: Cesium.Cartesian3.fromDegrees(lon, lat, height),
+            billboard: {
+                verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+                image: canvas
+            }
+        });
+
+        this.entities.push(point);
+    }
+
+    /**
+     * 收集线数据
+     */
+    private collectLineString(coordinates: number[][], properties: any) {
+        if (coordinates.length < 2) return;
+
+        const positions = coordinates.map((coord) => {
+            const [lon, lat, height = 0] = coord;
+            return Cesium.Cartesian3.fromDegrees(lon, lat, height);
+        });
+
+        const line = this.viewer.entities.add({
+            polyline: {
+                positions: positions,
+                width: this.options.polylineWidth,
+                material: this.options.polylineColor,
+                clampToGround: true
+            },
+            properties: properties
+        });
+
+        this.entities.push(line);
+    }
+
+    /**
+     * 收集多边形数据
+     */
+    private collectPolygon(coordinates: number[][][], properties: any) {
+        if (!coordinates || coordinates.length === 0) return;
+
+        try {
+            // 收集普通填充面几何实例
+            const fillInstance = this.createFillGeometryInstance(coordinates, properties);
+            if (fillInstance) {
+                this.fillGeometryInstances.push(fillInstance);
+            }
+
+            // 收集拉伸面几何实例
+            const extrudedInstance = this.createExtrudedFillGeometryInstance(
+                coordinates,
+                properties
+            );
+            if (extrudedInstance) {
+                this.extrudedFillGeometryInstances.push(extrudedInstance);
+            }
+
+            // 收集普通边框几何实例
+            const rings = this.extractRings(coordinates);
+            for (let i = 0; i < rings.length; i++) {
+                const isHole = i > 0;
+                if (isHole && !this.options.strokeHoles) {
+                    continue;
+                }
+
+                const strokeInstance = this.createStrokeGeometryInstance(
+                    rings[i],
+                    `${this.featureCount}-${i}`
+                );
+                if (strokeInstance) {
+                    this.strokeGeometryInstances.push(strokeInstance);
+                }
+
+                // 收集拉伸边框几何实例
+                if (this.extrusionOptions.outlineOnExtruded) {
+                    const extrudedStrokeInstance = this.createExtrudedStrokeGeometryInstance(
+                        rings[i],
+                        properties,
+                        `${this.featureCount}-extruded-${i}`
+                    );
+                    if (extrudedStrokeInstance) {
+                        this.extrudedStrokeGeometryInstances.push(extrudedStrokeInstance);
+                    }
+                }
+            }
+
+            this.featureCount++;
+        } catch (error) {
+            console.error('收集多边形时出错:', error, coordinates);
+        }
+    }
+
+    /**
+     * 创建填充几何实例
+     */
+    private createFillGeometryInstance(
+        coordinates: number[][][],
+        properties: any
+    ): Cesium.GeometryInstance | null {
+        try {
+            const hierarchy = this.createPolygonHierarchy(coordinates);
+
+            if (!hierarchy.positions || hierarchy.positions.length < 3) {
+                console.warn('多边形顶点不足，跳过渲染');
+                return null;
+            }
+
+            return new Cesium.GeometryInstance({
+                geometry: new Cesium.PolygonGeometry({
+                    polygonHierarchy: hierarchy,
+                    height: 0,
+                    perPositionHeight: false
+                }),
+                id: properties.id || `polygon-${Date.now()}-${this.featureCount}`,
+                attributes: {
+                    color: Cesium.ColorGeometryInstanceAttribute.fromColor(this.options.fillColor)
+                }
+            });
+        } catch (error) {
+            console.error('创建填充几何实例时出错:', error);
+            return null;
+        }
+    }
+
+    /**
+     * 创建拉伸填充几何实例
+     */
+    private createExtrudedFillGeometryInstance(
+        coordinates: number[][][],
+        properties: any
+    ): Cesium.GeometryInstance | null {
+        try {
+            // 获取拉伸高度
+            let extrudedHeight = this.extrusionOptions.extrudedHeight!;
+
+            if (
+                this.extrusionOptions.extrudedHeightProperty &&
+                properties[this.extrusionOptions.extrudedHeightProperty]
+            ) {
+                extrudedHeight = parseFloat(
+                    properties[this.extrusionOptions.extrudedHeightProperty]
+                );
+            }
+
+            if (this.extrusionOptions.randomHeight) {
+                extrudedHeight = (Math.random() / 2 + 0.5) * extrudedHeight;
+            }
+
+            // 获取基础高度
+            let baseHeight = this.extrusionOptions.baseHeight;
+            if (
+                this.extrusionOptions.baseHeightProperty &&
+                properties[this.extrusionOptions.baseHeightProperty]
+            ) {
+                baseHeight = parseFloat(properties[this.extrusionOptions.baseHeightProperty]);
+            }
+
+            // 如果没有设置拉伸高度，则不创建拉伸几何体
+            if (!extrudedHeight || extrudedHeight <= 0) {
+                return null;
+            }
+
+            const hierarchy = this.createPolygonHierarchy(coordinates);
+
+            if (!hierarchy.positions || hierarchy.positions.length < 3) {
+                console.warn('多边形顶点不足，跳过拉伸渲染');
+                return null;
+            }
+
+            // 处理孔洞：如果不拉伸孔洞，需要过滤掉
+            let finalHierarchy = hierarchy;
+            if (
+                !this.extrusionOptions.extrudeHoles &&
+                hierarchy.holes &&
+                hierarchy.holes.length > 0
+            ) {
+                // 只使用外环，忽略内环
+                finalHierarchy = new Cesium.PolygonHierarchy(hierarchy.positions);
+            }
+
+            return new Cesium.GeometryInstance({
+                geometry: new Cesium.PolygonGeometry({
+                    polygonHierarchy: finalHierarchy,
+                    height: baseHeight,
+                    extrudedHeight: extrudedHeight,
+                    perPositionHeight: false
+                }),
+                id: `extruded-${properties.id || `polygon-${Date.now()}-${this.featureCount}`}`,
+                attributes: {
+                    color: Cesium.ColorGeometryInstanceAttribute.fromColor(
+                        this.extrusionOptions.extrudedFillColor || this.options.fillColor
+                    )
+                }
+            });
+        } catch (error) {
+            console.error('创建拉伸填充几何实例时出错:', error);
+            return null;
+        }
+    }
+
+    /**
+     * 创建边框几何实例
+     */
+    private createStrokeGeometryInstance(
+        ring: number[][],
+        id: string
+    ): Cesium.GeometryInstance | null {
+        try {
+            if (!ring || ring.length < 2) {
+                return null;
+            }
+
+            const cleanedRing = ring.map((coord) => {
+                const [lon, lat] = coord.slice(0, 2);
+                return [lon, lat];
+            });
+
+            let unclosedRing = cleanedRing;
+            const first = cleanedRing[0];
+            const last = cleanedRing[cleanedRing.length - 1];
+
+            if (
+                cleanedRing.length > 2 &&
+                Math.abs(first[0] - last[0]) < 0.000001 &&
+                Math.abs(first[1] - last[1]) < 0.000001
+            ) {
+                unclosedRing = cleanedRing.slice(0, -1);
+            }
+
+            if (unclosedRing.length < 2) {
+                return null;
+            }
+
+            const positions = Cesium.Cartesian3.fromDegreesArray(unclosedRing.flat());
+
+            return new Cesium.GeometryInstance({
+                geometry: new Cesium.GroundPolylineGeometry({
+                    positions: positions,
+                    width: this.options.strokeWidth,
+                    loop: true
+                }),
+                id: id,
+                attributes: {
+                    color: Cesium.ColorGeometryInstanceAttribute.fromColor(this.options.strokeColor)
+                }
+            });
+        } catch (error) {
+            console.error('创建边框几何实例时出错:', error);
+            return null;
+        }
+    }
+
+    /**
+     * 创建拉伸边框几何实例
+     */
+    private createExtrudedStrokeGeometryInstance(
+        ring: number[][],
+        properties: any,
+        id: string
+    ): Cesium.GeometryInstance | null {
+        try {
+            if (!ring || ring.length < 2) {
+                return null;
+            }
+
+            // // 获取拉伸高度
+            // let extrudedHeight = this.extrusionOptions.extrudedHeight;
+            // if (
+            //     this.extrusionOptions.extrudedHeightProperty &&
+            //     properties[this.extrusionOptions.extrudedHeightProperty]
+            // ) {
+            //     extrudedHeight = parseFloat(
+            //         properties[this.extrusionOptions.extrudedHeightProperty]
+            //     );
+            // }
+
+            // // 如果没有设置拉伸高度，则不创建拉伸边框
+            // if (!extrudedHeight || extrudedHeight <= 0) {
+            //     return null;
+            // }
+
+            // if (this.extrusionOptions.randomHeight) {
+            //     extrudedHeight = (Math.random() / 2 + 0.5) * extrudedHeight;
+            // }
+
+            // 清理环数据，确保是有效的经纬度
+            const cleanedRing = ring.map((coord) => {
+                const [lon, lat] = coord.slice(0, 2);
+                return Cesium.Cartesian3.fromDegrees(lon, lat, 0);
+            });
+
+            // 如果环是闭合的，移除最后一个点
+            let positions = cleanedRing;
+            if (cleanedRing.length > 2) {
+                const first = cleanedRing[0];
+                const last = cleanedRing[cleanedRing.length - 1];
+
+                // 检查是否闭合（考虑浮点数精度）
+                const isClosed = Cesium.Cartesian3.equalsEpsilon(first, last, 0.000001);
+                if (isClosed) {
+                    positions = cleanedRing.slice(0, -1);
+                }
+            }
+
+            if (positions.length < 2) {
+                return null;
+            }
+
+            return new Cesium.GeometryInstance({
+                geometry: new Cesium.PolylineGeometry({
+                    positions: positions,
+                    width: this.options.strokeWidth,
+                    vertexFormat: Cesium.PolylineColorAppearance.VERTEX_FORMAT
+                }),
+                id: id,
+                attributes: {
+                    color: Cesium.ColorGeometryInstanceAttribute.fromColor(this.options.strokeColor)
+                }
+            });
+        } catch (error) {
+            console.error('创建拉伸边框几何实例时出错:', error);
+            return null;
+        }
+    }
+
+    /**
+     * 批量创建 Primitive
+     */
+    private async createBatchPrimitives() {
+        // 创建普通填充面批次 Primitive
+        if (this.fillGeometryInstances.length > 0) {
+            this.fillPrimitive = new Cesium.GroundPrimitive({
+                geometryInstances: this.fillGeometryInstances,
+                appearance: new Cesium.PerInstanceColorAppearance({
+                    translucent: this.options.fillColor.alpha < 1.0,
+                    closed: true
+                }),
+                classificationType: Cesium.ClassificationType.BOTH,
+                asynchronous: true
+            });
+
+            this.scene.primitives.add(this.fillPrimitive);
+        }
+
+        // 创建拉伸填充面批次 Primitive
+        if (this.extrudedFillGeometryInstances.length > 0) {
+            this.extrudedFillPrimitive = new Cesium.Primitive({
+                geometryInstances: this.extrudedFillGeometryInstances,
+                appearance: new Cesium.PerInstanceColorAppearance({
+                    translucent:
+                        (this.extrusionOptions.extrudedFillColor || this.options.fillColor).alpha <
+                        1.0,
+                    closed: true,
+                    flat: true
+                }),
+                asynchronous: true,
+                compressVertices: true
+            });
+
+            this.scene.primitives.add(this.extrudedFillPrimitive);
+        }
+
+        // 创建普通边框批次 Primitive
+        if (this.strokeGeometryInstances.length > 0) {
+            this.strokePrimitive = new Cesium.GroundPolylinePrimitive({
+                geometryInstances: this.strokeGeometryInstances,
+                appearance: new Cesium.PolylineColorAppearance(),
+                asynchronous: true
+            });
+
+            this.scene.primitives.add(this.strokePrimitive);
+        }
+
+        // 创建拉伸边框批次 Primitive
+        if (this.extrudedStrokeGeometryInstances.length > 0) {
+            this.extrudedStrokePrimitive = new Cesium.Primitive({
+                geometryInstances: this.extrudedStrokeGeometryInstances,
+                appearance: new Cesium.PolylineColorAppearance({
+                    translucent: this.options.strokeColor.alpha < 1.0
+                }),
+                asynchronous: true
+            });
+
+            this.scene.primitives.add(this.extrudedStrokePrimitive);
+        }
+    }
+
+    /**
+     * 清除所有渲染
+     */
+    clear() {
+        // 清除批量 Primitive
+        this.clearBatchPrimitives();
+
+        // 清除几何实例数组
+        this.fillGeometryInstances = [];
+        this.extrudedFillGeometryInstances = [];
+        this.strokeGeometryInstances = [];
+        this.extrudedStrokeGeometryInstances = [];
+        this.featureCount = 0;
+
+        // 清除 Entity
+        this.entities.forEach((entity) => {
+            this.viewer.entities.remove(entity);
+        });
+        this.entities.length = 0;
+    }
+
+    /**
+     * 创建多边形层级结构
+     */
+    private createPolygonHierarchy(coordinates: number[][][]): Cesium.PolygonHierarchy {
+        if (!coordinates || coordinates.length === 0) {
+            return new Cesium.PolygonHierarchy([]);
+        }
+
+        // 处理外环
+        const outerRing = coordinates[0];
+        const outerPositions = this.convertRingToCartesian3(outerRing);
+
+        const hierarchy = new Cesium.PolygonHierarchy(outerPositions);
+
+        // 处理内环（洞）
+        if (coordinates.length > 1) {
+            for (let i = 1; i < coordinates.length; i++) {
+                const hole = coordinates[i];
+                const holePositions = this.convertRingToCartesian3(hole);
+
+                if (holePositions.length >= 3) {
+                    hierarchy.holes.push(new Cesium.PolygonHierarchy(holePositions));
+                }
+            }
+        }
+
+        return hierarchy;
+    }
+
+    /**
+     * 转换环为 Cartesian3 数组
+     */
+    private convertRingToCartesian3(ring: number[][]): Cesium.Cartesian3[] {
+        if (!ring || ring.length === 0) {
+            return [];
+        }
+
+        // 清理环数据：只取经纬度，确保环闭合
+        const cleanedCoords: number[] = [];
+
+        for (const coord of ring) {
+            const [lon, lat] = coord.slice(0, 2); // 只取前两个值
+
+            // 验证坐标
+            if (typeof lon === 'number' && typeof lat === 'number') {
+                cleanedCoords.push(lon, lat);
+            }
+        }
+
+        // 如果环未闭合，添加第一个点使其闭合
+        if (cleanedCoords.length >= 4) {
+            const firstLon = cleanedCoords[0];
+            const firstLat = cleanedCoords[1];
+            const lastLon = cleanedCoords[cleanedCoords.length - 2];
+            const lastLat = cleanedCoords[cleanedCoords.length - 1];
+
+            // 检查是否闭合
+            const tolerance = 0.000001;
+            const isClosed =
+                Math.abs(firstLon - lastLon) < tolerance &&
+                Math.abs(firstLat - lastLat) < tolerance;
+
+            if (!isClosed) {
+                cleanedCoords.push(firstLon, firstLat);
+            }
+        }
+
+        try {
+            return Cesium.Cartesian3.fromDegreesArray(cleanedCoords);
+        } catch (error) {
+            console.error('转换坐标时出错:', error, ring);
+            return [];
+        }
+    }
+
+    /**
+     * 提取所有环
+     */
+    private extractRings(coordinates: number[][][]): number[][][] {
+        return coordinates.map((ring) => {
+            // 清理环数据：只保留经纬度
+            return ring.map((coord) => coord.slice(0, 2));
+        });
+    }
+}
+
+/**
  * @description 绘制几何
  * */
 export class DrawGeometry {

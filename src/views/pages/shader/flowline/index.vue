@@ -9,7 +9,7 @@ import baseCesiumViewer from '@/components/baseCesiumViewer/index.vue';
 
 import { useCesiumViewer } from '@/stores/useCesiumViewer';
 import { LineEffect } from '@/utils/cesiumTools/LineEffect';
-import shader from '@/shaders/FlowlineEffect.glsl?raw';
+import shader from '@/shaders/FlowlineEffect.js';
 import GUI from 'lil-gui';
 
 const store = useCesiumViewer();
@@ -62,6 +62,10 @@ onMounted(() => {
         material.uniforms.speed = controls.speed;
         material.uniforms.glowPower = controls.glowPower;
     });
+});
+
+onUnmounted(() => {
+    gui.destroy();
 });
 </script>
 

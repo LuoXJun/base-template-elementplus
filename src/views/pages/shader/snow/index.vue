@@ -8,17 +8,31 @@
 import baseCesiumViewer from '@/components/baseCesiumViewer/index.vue';
 
 import { useCesiumViewer } from '@/stores/useCesiumViewer';
-import shader from '@/shaders/snowEffect/image.glsl?raw';
+import shader from '@/shaders/snowEffect.js';
 import GUI from 'lil-gui';
+import { resolveIncludes } from '@/utils/cesiumTools/shaderChunk';
 const gui = new GUI();
 
 const store = useCesiumViewer();
 onMounted(() => {
+    store.Viewer?.camera.flyTo({
+        destination: new Cesium.Cartesian3(
+            -1636490.2739774475,
+            5480026.40119158,
+            2822080.0077188197
+        ),
+        orientation: {
+            heading: 0.37750621295042386,
+            pitch: -0.2514047493844911,
+            roll: 0.0000529132523752196
+        }
+    });
+
     const controls = {
         uvBias: new Cesium.Cartesian2(-7e-7, -0.00001572),
-        splitX: 1,
+        splitX: 0.5,
         maxDistance: 1e5,
-        snowThickness: 0.41,
+        snowThickness: 0.4,
         skyCoverage: 0.5,
         coverSky: true,
         showCover: true,
@@ -26,14 +40,12 @@ onMounted(() => {
         showParticles: true,
         snowDensity: 1,
         // 通过深度来控制表达雪颗粒的大小
-        snowSize: 1,
-        // 切换雪花形状
-        styleType: 1
+        snowSize: 1
     };
 
     const stage = new Cesium.PostProcessStage({
         uniforms: controls,
-        fragmentShader: shader
+        fragmentShader: resolveIncludes(shader)
     });
     store.Viewer?.postProcessStages.add(stage);
 
@@ -53,6 +65,10 @@ onMounted(() => {
             stage.uniforms[key] = controls[key];
         }
     });
+});
+
+onUnmounted(() => {
+    gui.destroy();
 });
 </script>
 

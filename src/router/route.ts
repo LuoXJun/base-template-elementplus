@@ -41,11 +41,27 @@ export const routeConfig: RouteOptions[] = [
             },
             {
                 path: 'snow',
-                sort: 2,
+                sort: 3,
                 component: 'shader/snow',
                 name: 'snow',
                 type: 'link',
                 title: '下雪后处理'
+            },
+            {
+                path: 'fog',
+                sort: 4,
+                component: 'shader/fog',
+                name: 'fog',
+                type: 'link',
+                title: '高度雾'
+            },
+            {
+                path: 'volumeCloud',
+                sort: 4,
+                component: 'shader/volumeCloud',
+                name: 'volumeCloud',
+                type: 'link',
+                title: '体积云'
             }
         ]
     }
