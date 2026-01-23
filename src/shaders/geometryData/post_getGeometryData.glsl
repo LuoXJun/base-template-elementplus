@@ -1,5 +1,6 @@
 uniform sampler2D depthTexture;
 in vec2 v_textureCoordinates;
+uniform sampler2D colorTexture;
 
 /*封装后期处理几何体参数数据结构及其相关计算的常用方法：*/
 
@@ -17,6 +18,7 @@ struct PostGeometryData {
     float height;//海拔高度，精度较低，噪点较多，谨慎使用
     float depth;//深度
     bool isSky;//天空标记，true表示当前点为天空背景
+    vec4 sceneColor;//场景颜色
 };
 #endif
 
@@ -273,6 +275,7 @@ PostGeometryData getGeometryData(in bool sample9) {
     geometry.isSky = depth >= 1.;
     vec3 h = geometry.positionWC - geometry.positionGC;
     geometry.height = sign(dot(h, geometry.positionWC)) * length(h);
+    geometry.sceneColor = texture(colorTexture, v_textureCoordinates);
     return geometry;
 }
 /**

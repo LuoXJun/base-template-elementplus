@@ -1,6 +1,6 @@
 // Auto-generated from RainEffect.glsl
 // Hash: d9351465
-// Generated at: 2026-01-14T01:32:31.622Z
+// Generated at: 罗君
 
 const RAINEFFECT_SOURCE = `
 uniform sampler2D colorTexture;

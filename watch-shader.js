@@ -100,7 +100,7 @@ function generateJsContent(glslContent, fileName, config) {
 function generateEs6Template(content, baseName, className, hash, parsed) {
     return `// Auto-generated from ${baseName}.glsl
 // Hash: ${hash}
-// Generated at: ${new Date().toISOString()}
+// Generated at: 罗君
 
 const ${baseName.toUpperCase()}_SOURCE = \`
 ${content}

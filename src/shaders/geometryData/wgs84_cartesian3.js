@@ -1,9 +1,11 @@
 // Auto-generated from wgs84_cartesian3.glsl
-// Hash: e0236530
-// Generated at: 2026-01-14T01:32:31.631Z
+// Hash: 4afa1407
+// Generated at: 罗君
 
 const WGS84_CARTESIAN3_SOURCE = `
 const float EPSILON12 = .000000000001;
+const float PI = 3.14159265359;
+const int ZERO = 0;
 /**
 * Scales the provided Cartesian position along the geodetic surface normal
 * so that it is on the surface of this ellipsoid.  If the position is
@@ -217,7 +219,7 @@ export class Wgs84Cartesian3Shader {
     this.source = WGS84_CARTESIAN3_SOURCE;
     this.uniforms = WGS84_CARTESIAN3_UNIFORMS;
     this.attributes = WGS84_CARTESIAN3_ATTRIBUTES;
-    this.hash = 'e0236530';
+    this.hash = '4afa1407';
   }
   
   getVertexShader() {

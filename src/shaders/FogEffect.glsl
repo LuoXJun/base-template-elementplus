@@ -2,7 +2,6 @@
 #extension GL_OES_standard_derivatives : enable
 #endif
 
-uniform sampler2D colorTexture;
 uniform float u_fogHeight;
 uniform float u_globalDensity;
 uniform vec4 fogColor;
@@ -19,6 +18,7 @@ struct PostGeometryData {
     float height;//海拔高度
     float depth;//深度
     bool isSky;//天空标记，true表示当前点为天空背景
+    vec4 sceneColor;//场景颜色
 };
 #include <post_getGeometryData>
 PostGeometryData geometry;

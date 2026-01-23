@@ -31,7 +31,7 @@ const init = async () => {
         infoBox: false, //是否显示信息框
         selectionIndicator: false,
         animation: false, //是否创建动画小器件，左下角仪表
-        timeline: false, //是否显示时间轴
+        timeline: true, //是否显示时间轴
         shouldAnimate: false, //是否显示动画
         navigationHelpButton: false //是否显示右上角的帮助按钮
     });

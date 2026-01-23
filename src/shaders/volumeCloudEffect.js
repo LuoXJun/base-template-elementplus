@@ -1,364 +1,323 @@
 // Auto-generated from volumeCloudEffect.glsl
-// Hash: 6d7f80b2
-// Generated at: 2026-01-14T09:23:29.946Z
+// Hash: 2a400c30
+// Generated at: 罗君
 
 const VOLUMECLOUDEFFECT_SOURCE = `
 precision highp float;
 
 #define POST_GEOMETRY_DATA
 struct PostGeometryData {
-    vec3 positionWC;//位置坐标（世界空间）
-    vec3 positionEC;//位置坐标（相机空间）
-    vec3 positionGC;//投影到椭球表面的位置坐标（世界空间）
-    vec3 normalWC;//法线坐标（世界空间）
-    vec3 normalEC;//法线坐标（相机空间）
-    vec3 normalGC;//投影到椭球表面的法线坐标（世界空间）
-    vec2 uv;//投影到椭球表面的纹理坐标
-    float height;//海拔高度
-    float depth;//深度
-    bool isSky;//天空标记，true表示当前点为天空背景
+  vec3 positionWC;//位置坐标（世界空间）
+  vec3 positionEC;//位置坐标（相机空间）
+  vec3 positionGC;//投影到椭球表面的位置坐标（世界空间）
+  vec3 normalWC;//法线坐标（世界空间）
+  vec3 normalEC;//法线坐标（相机空间）
+  vec3 normalGC;//投影到椭球表面的法线坐标（世界空间）
+  vec2 uv;//投影到椭球表面的纹理坐标
+  float height;//海拔高度
+  float depth;//深度
+  bool isSky;//天空标记，true表示当前点为天空背景
+  vec4 sceneColor;//场景颜色
 };
 #include <post_getGeometryData>
 PostGeometryData geometry;
 
-uniform float realPlanetRadius; //地球半径 
-const float windSpeedRatio = 0.0002;//风速
-uniform float cloudCover;//云量
-uniform float cloudBase;//云的底部高度
-uniform float cloudTop;//云的顶部高度
-uniform vec3 windVector;//方向
-uniform float cloudThickness; //云层厚度 
-uniform float cloudBaseRadius;//云层底部半径
-uniform float cloudTopRadius; //云层顶部半径 
-uniform sampler2D colorTexture;
+uniform sampler2D iChannel2;
+uniform sampler2D blueNoise;
 
-const float PI = 3.14159265359;
-const float TWO_PI = 6.28318530718;
-const float FOUR_PI = 12.5663706144; 
+// 基本定义 
+#define MAX_STEPS 100
+#define MAX_STEPS_LIGHTS 10
+#define earthRadius longR
+#define sphereCenter vec3(-1635117.0284874607, 5477987.653236552, 2826439.5398477674)
+#define iTime czm_frameNumber/360. 
+#define ABSORPTION_COEFFICIENT 0.9
+#define SCATTERING_ANISO 0.3
+#define minCloudHeight 8000.
+#define maxCloudHeight 10000.
 
-  #define CLOUDS_MAX_LOD 1
-  #define CLOUDS_MARCH_STEP 500.0 //外部每次步进
-  #define CLOUDS_DENS_MARCH_STEP 100.0 //云内每次步进
-  #define MAXIMUM_CLOUDS_STEPS 300 //最大步进次数 
-  #define CLOUDS_MAX_VIEWING_DISTANCE 250000.0
+float noise(vec3 x) {
+  vec3 p = floor(x);
+  vec3 f = fract(x);
+  f = f * f * (3.0 - 2.0 * f);
 
-//射线与球体相交
-vec2 raySphereIntersect(vec3 r0, vec3 rd, float sr) {
-    float a = dot(rd, rd);
-    float b = 2.0 * dot(rd, r0);
-    float c = dot(r0, r0) - (sr * sr);
-    float d = (b * b) - 4.0 * a * c;
+  vec2 uv = mod(p.xy + vec2(37.0, 239.0) * p.z, 256.0) + f.xy;
 
-    if(d < 0.0)
-        return vec2(-1.0, -1.0);
-    float squaredD = sqrt(d);
+  vec2 tex = textureLod(iChannel2, (uv + 0.5) / 256.0, 0.0).yx;
 
-    float t0 = (-b - squaredD) / (2.0 * a);
-    float t1 = (-b + squaredD) / (2.0 * a);
+  return mix(tex.x, tex.y, f.z) * 2.0 - 1.0;
+}
 
-    // 确保t0 <= t1
-    if(t0 > t1) {
-        float temp = t0;
-        t0 = t1;
-        t1 = temp;
+vec2 raySphereDst(float radius, vec3 rayOrigin, vec3 rayDir) {
+  vec3 oc = rayOrigin;
+  float b = dot(rayDir, oc);
+  float c = dot(oc, oc) - radius * radius;
+  float t = b * b - c; // t > 0有两个交点, = 0 相切， < 0 不相交
+
+  float delta = sqrt(max(t, 0.0));
+  float dstToSphere = max(-b - delta, 0.0);
+  float dstInSphere = max(-b + delta - dstToSphere, 0.0);
+  return vec2(dstToSphere, dstInSphere);
+}
+
+/*
+		计算相机发出的射线与云层范围的相交情况
+		返回值：
+			dstToCloudLayer  到云层的最近距离
+			dstInCloudLayer  在云层中穿过的距离
+	*/
+vec2 rayCloudLayerDst(vec3 rayOrigin, vec3 rayDir) {
+
+  vec2 cloudDstMin = raySphereDst(minCloudHeight + earthRadius, rayOrigin, rayDir);
+  vec2 cloudDstMax = raySphereDst(maxCloudHeight + earthRadius, rayOrigin, rayDir);
+
+  float cameraHeight = wgs84_getHeight(rayOrigin);
+
+		// 射线到云层的最近距离
+  float dstToCloudLayer = 0.0;
+		// 射线穿过云层的距离
+  float dstInCloudLayer = 0.0;
+    // 在地表上
+  if(cameraHeight <= minCloudHeight) {
+    dstToCloudLayer = cloudDstMin.y;
+    dstInCloudLayer = cloudDstMax.y - cloudDstMin.y;
+    return vec2(dstToCloudLayer, dstInCloudLayer);
+  }
+
+		// 在云层内
+  if(cameraHeight > minCloudHeight && cameraHeight <= maxCloudHeight) {
+    dstToCloudLayer = 0.0;
+    dstInCloudLayer = cloudDstMin.y > 0.0 ? cloudDstMin.x : cloudDstMax.y;
+    return vec2(dstToCloudLayer, dstInCloudLayer);
+  }
+
+		// 在云层外
+  dstToCloudLayer = cloudDstMax.x;
+  dstInCloudLayer = cloudDstMin.y > 0.0 ? cloudDstMin.x - dstToCloudLayer : cloudDstMax.y;
+
+  return vec2(dstToCloudLayer, dstInCloudLayer);
+}
+
+float sdSphere(vec3 p, float innerRadius, float outerRadius) {
+  float d = length(p);
+
+    // 方法1：绝对值法（类似圆环的扩展）
+    // 计算到中间距离，然后减去一半厚度
+  float mid_radius = (innerRadius + outerRadius) * 0.5;
+  float half_thickness = (outerRadius - innerRadius) * 0.5;
+
+  return abs(d - mid_radius) - half_thickness;
+
+}
+
+float fbm(vec3 p) {
+  vec3 q = p + iTime * 0.5 * vec3(1., -0.2, -1.);
+  float f = 0.0;
+  float scale = 0.5;
+  float factor = 2.02;
+
+  for(int i = 0; i < 3; i++) {
+    f += scale * noise(q);
+    q *= factor;
+    factor += 0.21;
+    scale *= 0.5;
+  }
+
+  return f;
+}
+
+float scene(vec3 p) {
+  float distance = sdSphere(p, earthRadius + minCloudHeight, earthRadius + maxCloudHeight);
+
+  return distance;
+}
+
+float raymarch(vec3 rayOrigin, vec3 rayDirection, float offset) {
+  vec2 distToSphere = rayCloudLayerDst(rayOrigin, rayDirection);
+  float MARCH_SIZE = distToSphere.y / float(MAX_STEPS * 2);
+
+  float depth = 0.;
+  depth += MARCH_SIZE * offset;
+  vec3 startPos = rayOrigin + rayDirection * distToSphere.x;
+
+  if(distToSphere.y <= 0.)
+    return 0.;
+
+  for(int i = 0; i < MAX_STEPS; i++) {
+    vec3 p = startPos + rayDirection * depth;
+    float dist = scene(p);
+
+    if(dist < 0.001) {
+      return depth;
     }
 
-    // 如果两个交点都在视线后方，返回无效值
-    if(t1 < 0.0)
-        return vec2(-1.0, -1.0);
+    depth += dist;
 
-    // 如果最近的交点在视线后方，使用最远的交点
-    if(t0 < 0.0)
-        return vec2(0.0, t1);
-
-    return vec2(t0, t1);
-}
-
-  // 计算射线与球壳（云层）的相交
-vec2 rayCloudLayerIntersect(vec3 rayOrigin, vec3 rayDir, float innerRadius, float outerRadius) {
-    vec2 innerHit = raySphereIntersect(rayOrigin, rayDir, innerRadius);
-    vec2 outerHit = raySphereIntersect(rayOrigin, rayDir, outerRadius);
-
-    // 如果没有与任何球面相交
-    if(innerHit.x < 0.0 && outerHit.x < 0.0)
-        return vec2(-1.0, -1.0);
-
-    float startDistance, endDistance;
-
-    // 射线从外部进入云层
-    if(outerHit.x >= 0.0) {
-        startDistance = outerHit.x;
-      // 如果与内球面相交，结束在内球面，否则结束在外球面的第二个交点
-        endDistance = (innerHit.x >= 0.0) ? min(innerHit.x, outerHit.y) : outerHit.y;
+    if(depth >= distToSphere.y) {
+      break;
     }
-    // 射线从内部出发（相机在云层内）
-    else if(innerHit.x >= 0.0) {
-        startDistance = 0.0;
-        endDistance = innerHit.x;
+  }
+
+}
+
+const mat3 m3 = mat3(0.00, 0.80, 0.60, -0.80, 0.36, -0.48, -0.60, -0.48, 0.64);
+const mat3 m3i = mat3(0.00, -0.80, -0.60, 0.80, 0.36, -0.48, 0.60, -0.48, 0.64);
+float hash1(float n) {
+  return fract(n * 17.0 * fract(n * 0.3183099));
+}
+vec4 noised(in vec3 x) {
+  vec3 p = floor(x);
+  vec3 w = fract(x);
+    #if 1
+  vec3 u = w * w * w * (w * (w * 6.0 - 15.0) + 10.0);
+  vec3 du = 30.0 * w * w * (w * (w - 2.0) + 1.0);
+    #else
+  vec3 u = w * w * (3.0 - 2.0 * w);
+  vec3 du = 6.0 * w * (1.0 - w);
+    #endif
+
+  float n = p.x + 317.0 * p.y + 157.0 * p.z;
+
+  float a = hash1(n + 0.0);
+  float b = hash1(n + 1.0);
+  float c = hash1(n + 317.0);
+  float d = hash1(n + 318.0);
+  float e = hash1(n + 157.0);
+  float f = hash1(n + 158.0);
+  float g = hash1(n + 474.0);
+  float h = hash1(n + 475.0);
+
+  float k0 = a;
+  float k1 = b - a;
+  float k2 = c - a;
+  float k3 = e - a;
+  float k4 = a - b - c + d;
+  float k5 = a - c - e + g;
+  float k6 = a - b - e + f;
+  float k7 = -a + b + c - d + e - f - g + h;
+
+  return vec4(-1.0 + 2.0 * (k0 + k1 * u.x + k2 * u.y + k3 * u.z + k4 * u.x * u.y + k5 * u.y * u.z + k6 * u.z * u.x + k7 * u.x * u.y * u.z), 2.0 * du * vec3(k1 + k4 * u.y + k6 * u.z + k7 * u.y * u.z, k2 + k5 * u.z + k4 * u.x + k7 * u.z * u.x, k3 + k6 * u.x + k5 * u.y + k7 * u.x * u.y));
+}
+vec4 fbmd_8(in vec3 x) {
+  float f = 2.0;
+  float s = 0.65;
+  float a = 0.0;
+  float b = 0.5;
+  vec3 d = vec3(0.0);
+  mat3 m = mat3(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
+  for(int i = ZERO; i < 8; i++) {
+    vec4 n = noised(x);
+    a += b * n.x;          // accumulate values		
+    if(i < 4)
+      d += b * m * n.yzw;      // accumulate derivatives
+    b *= s;
+    x = f * m3 * x;
+    m = f * m3i * m;
+  }
+  return vec4(a, d);
+}
+vec4 cloudsFbm(in vec3 pos) {
+  return fbmd_8(pos * 0.0015 + vec3(2.0, 1.1, 1.0) + 0.07 * vec3(iTime, 0.5 * iTime, -0.15 * iTime));
+}
+vec4 cloudsMap(in vec3 pos, out float nnd) {
+  float d = abs(wgs84_getHeight(pos) - earthRadius - maxCloudHeight) - minCloudHeight;
+  vec3 gra = vec3(0.0, sign(pos.y - 900.0), 0.0);
+
+  vec4 n = cloudsFbm(pos);
+  d += 400.0 * n.x * (0.7 + 0.3 * gra.y);
+
+  if(d > 0.0)
+    return vec4(-d, 0.0, 0.0, 0.0);
+
+  nnd = -d;
+  d = min(-d / 100.0, 0.25);
+
+    //gra += 0.1*n.yzw *  (0.7+0.3*gra.y);
+
+  return vec4(d, gra);
+}
+vec4 renderClouds(in vec3 ro, in vec3 rd) {
+  vec2 distToSphere = rayCloudLayerDst(ro, rd);
+
+  vec4 sum = vec4(0.0);
+
+  float tmax = distToSphere.y;
+  // if(tmax <= 0.)
+  //   return sum;
+
+  float t = distToSphere.x;
+  float lastT = -1.0;
+  float thickness = 0.0;
+  vec3 startPos = ro + rd * t;
+
+  for(int i = ZERO; i < 128; i++) {
+    vec3 pos = startPos;
+    float nnd;
+    vec4 denGra = cloudsMap(pos, nnd);
+    float den = denGra.x;
+    float dt = max(0.2, 0.011 * t);
+    if(den > 0.001) {
+      float kk;
+      float sha = 1.0 - smoothstep(-200.0, 200.0, kk);
+      sha *= 1.5;
+
+            // color
+      vec3 col = vec3(0.8, 0.8, 0.8) * 0.45;
+
+            // front to back blending    
+      float alp = clamp(den * 0.5 * 0.125 * dt, 0.0, 1.0);
+      col.rgb *= alp;
+      sum = sum + vec4(col, alp) * (1.0 - sum.a);
+
+      thickness += dt * den;
+      if(lastT < 0.0)
+        lastT = t;
+    } else {
+      dt = abs(den) + 0.2;
+
     }
+    t += dt;
+    if(sum.a > 0.995 || t > tmax)
+      break;
+  }
 
-    return vec2(startDistance, endDistance);
-}
+  sum.xyz += max(0.0, 1.0 - 0.0125 * thickness) * vec3(1.00, 0.60, 0.40) * 0.3;
 
-float saturate(float value) {
-    return clamp(value, 0.0, 1.0);
-}
-
-float isotropic() {
-    return 0.07957747154594767; //1.0 / (4.0 * PI);
-}
-
-float rayleigh(float costh) {
-    return (3.0 / (16.0 * PI)) * (1.0 + pow(costh, 2.0));
-}
-
-float Schlick(float k, float costh) {
-    return (1.0 - k * k) / (FOUR_PI * pow(1.0 - k * costh, 2.0));
-}
-float g = 0.9;
-
-float hash(float p) {
-    p = fract(p * .1031);
-    p *= p + 33.33;
-    p *= p + p;
-    return fract(p);
-}
-
-  //噪声
-float noise(in vec3 x) {
-    vec3 p = floor(x);
-    vec3 f = fract(x);
-    f = f * f * (3.0 - 2.0 * f);
-
-    float n = p.x + p.y * 157.0 + p.z * 113.0;
-    return mix(mix(mix(hash(n + 0.0), hash(n + 1.0), f.x), mix(hash(n + 157.0), hash(n + 158.0), f.x), f.y), mix(mix(hash(n + 113.0), hash(n + 114.0), f.x), mix(hash(n + 270.0), hash(n + 271.0), f.x), f.y), f.z);
-}
-
-  //云的密度
-float cloudDensity(vec3 p, vec3 wind, int lod, inout float heightRatio) {
-    float finalCoverage = cloudCover;
-    if(finalCoverage <= 0.1) {
-        return 0.0;
-    }
-
-     // 计算当前点的高度比
-    heightRatio = (length(p) - cloudBaseRadius) / (cloudThickness);
-    heightRatio = saturate(heightRatio);
-
-     // 根据LOD调整采样频率
-    float lodScale = pow(2.0, float(lod));
-    vec3 samplePos = p * 0.00001 + wind * 0.1;
-    samplePos /= lodScale;
-
-     // 计算形状噪声
-    float shape = noise(samplePos);
-    float bn = noise(samplePos * 2.0 + wind * 0.2) * 0.5;
-
-     // 根据高度调整云的形状
-    float shapeHeight = shape * pow(heightRatio, 0.5);
-    float cumuloNimbus = saturate((shapeHeight - 0.5) * 2.0);
-    cumuloNimbus *= saturate(1.0 - pow(heightRatio - 0.5, 2.0) * 4.0);
-    float cumulus = saturate(1.0 - pow(heightRatio - 0.25, 2.0) * 25.0) * shapeHeight;
-    float stratoCumulus = saturate(1.0 - pow(heightRatio - 0.12, 2.0) * 60.0) * (1.0 - shapeHeight);
-    float dens = saturate(stratoCumulus + cumulus + cumuloNimbus) * 2.0 * finalCoverage;
-    dens -= 1.0 - shape;
-    dens -= bn;
-    return clamp(dens, 0.0, 1.0);
-}
-
-precision highp float;
-vec3 skyAmbientColor = vec3(0.705, 0.850, 0.952); //0.219, 0.380, 0.541
-vec3 groundAmbientColor = vec3(0.741, 0.898, 0.823); //0.639, 0.858, 0.721
-float distanceQualityR = 0.00005; // LOD/quality ratio
-float minDistance = 10.0; // avoid cloud in cockpit  
-
-vec4 calculate_clouds(
-    vec3 start,
-    vec3 dir,
-    float maxDistance,
-    vec3 light_dir,
-    vec3 wind
-) {
-    vec4 cloud = vec4(0.0, 0.0, 0.0, 1.0);
-    vec2 toTop = raySphereIntersect(start, dir, cloudTopRadius);
-    vec2 toBase = raySphereIntersect(start, dir, cloudBaseRadius);
-
-  // 使用修正后的射线与云层相交函数
-    vec2 cloudIntersection = rayCloudLayerIntersect(start, dir, cloudBaseRadius, cloudTopRadius);
-    float tmin = cloudIntersection.x;
-    float tmax = cloudIntersection.y;
-
-    // 如果没有与云层相交，返回透明
-    if(tmin < 0.0 || tmax < 0.0 || tmin >= tmax) {
-        return vec4(0.0);
-    }
-
-    // 计算相机高度
-    float cameraHeight = length(start) - realPlanetRadius;
-
-    // 如果相机在云层内部，从当前位置开始
-    if(cameraHeight > cloudBase && cameraHeight < cloudTop) {
-        tmin = 0.0;
-    }
-
-    float absoluteMaxDistance = min(maxDistance, CLOUDS_MAX_VIEWING_DISTANCE);
-    tmin = max(tmin, minDistance);
-    tmax = min(tmax, absoluteMaxDistance);
-
-    if(tmax <= tmin)
-        return vec4(0.0);
-
-    float rayLength = tmax - tmin;//步进总距离
-    float longMarchStep = rayLength / float(MAXIMUM_CLOUDS_STEPS);//步进距离/步进次数=每次步进的距离
-    longMarchStep = max(longMarchStep, CLOUDS_MARCH_STEP);//每次步进多少
-
-    float shortMarchStep = CLOUDS_DENS_MARCH_STEP;
-    float numberApproachSteps = (CLOUDS_MARCH_STEP / CLOUDS_DENS_MARCH_STEP) * 2.0;
-    float distance = tmin;//
-    float dens = 0.0;
-    float marchStep;
-
-    float lastDensity;
-    float kInScattering = 0.99;
-    float dotLightRay = dot(dir, light_dir);
-    float inScattering = Schlick(kInScattering, dotLightRay);
-    float outScattering = isotropic();
-    float sunScatteringPhase = mix(outScattering, inScattering, dotLightRay);
-    float ambientScatteringPhase = isotropic();
-    bool inCloud = false;
-    float stepsBeforeExitingCloud = 0.0;
-
-    for(int i = 0; i < MAXIMUM_CLOUDS_STEPS; i++) {
-        vec3 position = start + dir * distance;
-        int qualityRatio = int(distance * distanceQualityR);
-        int lod = CLOUDS_MAX_LOD - qualityRatio;
-        float heightRatio;
-
-        if(inCloud == true) {
-            marchStep = shortMarchStep;
-        } else {
-            marchStep = longMarchStep;
-            lod = 0;
-        }
-
-        dens = cloudDensity(position, wind, lod, heightRatio);
-
-        if(dens > 0.01) {
-            if(inCloud != true) {
-                inCloud = true;
-                stepsBeforeExitingCloud = numberApproachSteps;
-                distance = clamp(distance - CLOUDS_MARCH_STEP, tmin, tmax); // 第一次进入云 回退一步
-                continue;
-            }
-
-        // 计算光照
-            float lighting = saturate(dot(normalize(position), light_dir) * 0.5 + 0.5);
-            float scatteringCoeff = 0.15 * dens;
-            float extinctionCoeff = 0.01 * dens;
-            cloud.a *= exp(-extinctionCoeff * marchStep);
-            float sunIntensityAtSurface = clamp(0.2 - dens, 0.0, 1.0);
-            vec3 sunLight = lighting * czm_lightColor * sunIntensityAtSurface * czm_lightColor.z;
-            vec3 ambientSun = czm_lightColor * sunIntensityAtSurface * czm_lightColor.z * isotropic();
-            vec3 skyAmbientLight = (skyAmbientColor * czm_lightColor.z + ambientSun);
-            vec3 groundAmbientLight = (groundAmbientColor * czm_lightColor.z * 0.5 + ambientSun);
-            vec3 ambientLight = mix(groundAmbientLight, skyAmbientLight, heightRatio);
-            vec3 stepScattering = scatteringCoeff * marchStep * (sunScatteringPhase * sunLight + ambientScatteringPhase * ambientLight);
-            cloud.rgb += cloud.a * stepScattering;
-
-            if(cloud.a < 0.01) {
-                cloud.a = 0.0;
-                break;
-            }
-        } else {
-            if(stepsBeforeExitingCloud > 0.0) {
-                stepsBeforeExitingCloud--;
-            } else {
-                inCloud = false;
-            }
-        }
-
-        distance += marchStep;
-
-      //步进距离超出总的距离 退出
-        if(distance > tmax) {
-            break;
-        }
-    }
-    cloud.a = (1.0 - cloud.a);
-    return cloud;
+  return clamp(sum, 0.0, 1.0);
 }
 
 void main() {
-    geometry = getGeometryData();
+    // 获取几何数据
+  geometry = getGeometryData();
 
-    vec4 color = texture(colorTexture, v_textureCoordinates);
+  vec3 ro = czm_viewerPositionWC;
+  vec3 rd = normalize(geometry.positionWC - czm_viewerPositionWC);
+  vec3 color = vec3(0.);
+  vec3 sunDirection = normalize(czm_sunDirectionWC);
 
-    // 从深度纹理中重建深度
-    float depth = geometry.depth;
+  vec4 res = renderClouds(ro, rd);
 
-    vec4 positionEC = czm_windowToEyeCoordinates(gl_FragCoord.xy, depth);
-    vec4 worldCoordinate = czm_inverseView * positionEC;
-    vec3 vWorldPosition = worldCoordinate.xyz / worldCoordinate.w;
-    vec3 posToEye = vWorldPosition - czm_viewerPositionWC;
-    vec3 direction = normalize(posToEye);
-    vec3 lightDirection = normalize(czm_sunPositionWC);
-    float distance = length(posToEye);
+  vec2 distToSphere = rayCloudLayerDst(ro, rd);
 
-    if(depth == 1.0) {
-        distance = CLOUDS_MAX_VIEWING_DISTANCE;
-    }
-    vec3 wind = windVector * czm_frameNumber * windSpeedRatio;
-    vec4 clouds = calculate_clouds(czm_viewerPositionWC, // the position of the camera
-    direction, // the camera vector (ray direction of this pixel)
-    distance, // max dist, essentially the scene depth
-    lightDirection, // light direction
-    wind);
-    clouds.rgb *= 3.0;
-    color = mix(color, clouds, clouds.a * clouds.a);
+  out_FragColor = vec4(mix(geometry.sceneColor.rgb, color, res.a), 1.);
+  // if(res < distToSphere.y) {
+  //   out_FragColor = vec4(vec3(0.), 1.);
+  // } else {
+  //   out_FragColor = geometry.sceneColor;
+  // }
 
-    float exposure = 1.2;
-    color = vec4(1.0 - exp(-exposure * color));
-    out_FragColor = color;
 }
 `;
 
 // Uniform 信息
 export const VOLUMECLOUDEFFECT_UNIFORMS = [
   {
-    "type": "float",
-    "name": "realPlanetRadius"
-  },
-  {
-    "type": "float",
-    "name": "cloudCover"
-  },
-  {
-    "type": "float",
-    "name": "cloudBase"
-  },
-  {
-    "type": "float",
-    "name": "cloudTop"
-  },
-  {
-    "type": "vec3",
-    "name": "windVector"
-  },
-  {
-    "type": "float",
-    "name": "cloudThickness"
-  },
-  {
-    "type": "float",
-    "name": "cloudBaseRadius"
-  },
-  {
-    "type": "float",
-    "name": "cloudTopRadius"
+    "type": "sampler2D",
+    "name": "iChannel2"
   },
   {
     "type": "sampler2D",
-    "name": "colorTexture"
+    "name": "blueNoise"
   }
 ];
 
@@ -371,7 +330,7 @@ export class VolumeCloudEffectShader {
     this.source = VOLUMECLOUDEFFECT_SOURCE;
     this.uniforms = VOLUMECLOUDEFFECT_UNIFORMS;
     this.attributes = VOLUMECLOUDEFFECT_ATTRIBUTES;
-    this.hash = '6d7f80b2';
+    this.hash = '2a400c30';
   }
   
   getVertexShader() {

@@ -1,4 +1,6 @@
 const float EPSILON12 = .000000000001;
+const float PI = 3.14159265359;
+const int ZERO = 0;
 /**
 * Scales the provided Cartesian position along the geodetic surface normal
 * so that it is on the surface of this ellipsoid.  If the position is

@@ -1,6 +1,6 @@
 // Auto-generated from FlowlineEffect.glsl
 // Hash: c5f81d85
-// Generated at: 2026-01-14T01:32:31.613Z
+// Generated at: 罗君
 
 const FLOWLINEEFFECT_SOURCE = `
 uniform vec4 color;

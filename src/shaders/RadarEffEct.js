@@ -1,6 +1,6 @@
 // Auto-generated from RadarEffEct.glsl
 // Hash: 9ee60111
-// Generated at: 2026-01-14T01:32:31.620Z
+// Generated at: 罗君
 
 const RADAREFFECT_SOURCE = `
 uniform vec4 uBaseColor;

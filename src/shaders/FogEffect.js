@@ -1,13 +1,12 @@
 // Auto-generated from FogEffect.glsl
-// Hash: f1a77fc6
-// Generated at: 2026-01-14T03:43:49.253Z
+// Hash: 71bb89a7
+// Generated at: 罗君
 
 const FOGEFFECT_SOURCE = `
 #ifdef GL_OES_standard_derivatives
 #extension GL_OES_standard_derivatives : enable
 #endif
 
-uniform sampler2D colorTexture;
 uniform float u_fogHeight;
 uniform float u_globalDensity;
 uniform vec4 fogColor;
@@ -24,6 +23,7 @@ struct PostGeometryData {
     float height;//海拔高度
     float depth;//深度
     bool isSky;//天空标记，true表示当前点为天空背景
+    vec4 sceneColor;//场景颜色
 };
 #include <post_getGeometryData>
 PostGeometryData geometry;
@@ -87,10 +87,6 @@ void main() {
 // Uniform 信息
 export const FOGEFFECT_UNIFORMS = [
   {
-    "type": "sampler2D",
-    "name": "colorTexture"
-  },
-  {
     "type": "float",
     "name": "u_fogHeight"
   },
@@ -113,7 +109,7 @@ export class FogEffectShader {
     this.source = FOGEFFECT_SOURCE;
     this.uniforms = FOGEFFECT_UNIFORMS;
     this.attributes = FOGEFFECT_ATTRIBUTES;
-    this.hash = 'f1a77fc6';
+    this.hash = '71bb89a7';
   }
   
   getVertexShader() {

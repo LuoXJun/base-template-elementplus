@@ -11,6 +11,7 @@ import { useCesiumViewer } from '@/stores/useCesiumViewer';
 import shader from '@/shaders/volumeCloudEffect.js';
 import GUI from 'lil-gui';
 import { resolveIncludes } from '@/utils/cesiumTools/shaderChunk';
+import { getImageWidthName2noise } from '@/utils/getAssets';
 const gui = new GUI();
 
 const store = useCesiumViewer();
@@ -44,23 +45,16 @@ onMounted(() => {
         currentWindVectorWC: new Cesium.Cartesian3(100, 0, 0)
     };
 
-    const controls = {
-        realPlanetRadius: 6378137,
-        windVector: uniforms.currentWindVectorWC,
-        cloudCover: uniforms.cloudCover,
-        cloudBase: uniforms.cloudBase,
-        cloudTop: uniforms.cloudTop,
-        cloudThickness: uniforms.cloudThickness,
-        cloudBaseRadius: uniforms.cloudBaseRadius,
-        cloudTopRadius: uniforms.cloudTopRadius
-    };
-
     const stage = new Cesium.PostProcessStage({
         uniforms: {
-            ...controls
+            iChannel1: getImageWidthName2noise('iChannel1.png'),
+            blueNoise: getImageWidthName2noise('blueNoise.png'),
+            iChannel2: getImageWidthName2noise('iChannel2.png'),
+            Perlin: getImageWidthName2noise('Perlin.png'),
         },
         fragmentShader: resolveIncludes(shader)
     });
+
     store.Viewer?.postProcessStages.add(stage);
 });
 

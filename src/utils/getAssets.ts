@@ -5,3 +5,7 @@
 export const getImageWidthName = (name: string) => {
     return new URL(`../assets/images/${name}`, import.meta.url).href;
 };
+
+export const getImageWidthName2noise = (name: string) => {
+    return new URL(`../assets/noise/${name}`, import.meta.url).href;
+};
