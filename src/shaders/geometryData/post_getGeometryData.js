@@ -1,5 +1,5 @@
 // Auto-generated from post_getGeometryData.glsl
-// Hash: 75b82485
+// Hash: fb5fc0d3
 // Generated at: 罗君
 
 const POST_GETGEOMETRYDATA_SOURCE = `
@@ -257,6 +257,17 @@ vec2 computeAspectSlope(in PostGeometryData geometry) {
     return computeAspectSlope(geometry.positionWC, geometry.normalWC, geometry.normalGC);
 }
 
+// 将世界坐标转换到屏幕空间坐标，并返回深度（在深度图所使用的空间中）
+float getSceneDepth(vec3 worldPos) {
+    vec4 clipPos = czm_modelViewProjection * vec4(worldPos, 1.0);
+    float depth = clipPos.z / clipPos.w; // 归一化深度，范围[-1,1]或[0,1]取决于具体实现
+    // 通常深度图存储的是非线性的深度，所以这里需要根据你的深度图格式调整
+    // 假设深度图存储的是gl_FragCoord.z，即已经经过投影矩阵变换并归一化到[0,1]
+    // 那么我们可以这样转换：
+    depth = depth * 0.5 + 0.5; // 如果投影矩阵是OpenGL的透视投影，且深度图是[0,1]范围
+    return depth;
+}
+
 /**
 获取后期处理常用的几何体参数，sample9指示是否使用邻近8个点的法线进行插值
 */
@@ -313,7 +324,7 @@ export class PostGetGeometryDataShader {
     this.source = POST_GETGEOMETRYDATA_SOURCE;
     this.uniforms = POST_GETGEOMETRYDATA_UNIFORMS;
     this.attributes = POST_GETGEOMETRYDATA_ATTRIBUTES;
-    this.hash = '75b82485';
+    this.hash = 'fb5fc0d3';
   }
   
   getVertexShader() {

@@ -41,6 +41,7 @@ export default defineConfig({
         host: true,
         port: 3005,
         hmr: true,
+
         proxy: {
             '^/user': {
                 target: 'http://10.222.125.103:38081/',
@@ -48,6 +49,14 @@ export default defineConfig({
                 changeOrigin: true,
                 rewrite: (path: string) => {
                     return path.replace(/^\/user/, '');
+                }
+            },
+            '^/lxj': {
+                target: 'http://www.gzstwater.com:12280/api/',
+                secure: false,
+                changeOrigin: true,
+                rewrite: (path: string) => {
+                    return path.replace(/^\/lxj/, '');
                 }
             }
         }

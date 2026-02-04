@@ -1,9 +1,13 @@
 import post_getGeometryData from '@/shaders/geometryData/post_getGeometryData.js';
 import wgs84_cartesian3 from '@/shaders/geometryData/wgs84_cartesian3.js';
+import commonly_used from '@/shaders/geometryData/commonly_used.js';
+import ray_marching_intersect from '@/shaders/geometryData/ray_marching_intersect.js';
 
 const ShaderChunk = {
     post_getGeometryData,
-    wgs84_cartesian3
+    wgs84_cartesian3,
+    commonly_used,
+    ray_marching_intersect
 };
 
 const includePattern = /^[ \t]*#include +<([\w\d./]+)>/gm;

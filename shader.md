@@ -3,6 +3,7 @@
 czm_viewerPositionWC //相机位置
 czm_eyeHeight //相机高度
 czm_sunDirectionWC //太阳光照方向
+czm_sunPositionWC //太阳世界坐标
 czm_lightColor //太阳光颜色
 v_textureCoordinates //归一化坐标
 czm_branchFreeTernary(bool,a,b)//三元运算符

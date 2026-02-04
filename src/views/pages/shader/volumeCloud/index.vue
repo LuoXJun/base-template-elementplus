@@ -12,7 +12,6 @@ import shader from '@/shaders/volumeCloudEffect.js';
 import GUI from 'lil-gui';
 import { resolveIncludes } from '@/utils/cesiumTools/shaderChunk';
 import { getImageWidthName2noise } from '@/utils/getAssets';
-const gui = new GUI();
 
 const store = useCesiumViewer();
 onMounted(() => {
@@ -47,19 +46,18 @@ onMounted(() => {
 
     const stage = new Cesium.PostProcessStage({
         uniforms: {
+            iChannel0: getImageWidthName2noise('iChannel0.png'),
             iChannel1: getImageWidthName2noise('iChannel1.png'),
-            blueNoise: getImageWidthName2noise('blueNoise.png'),
             iChannel2: getImageWidthName2noise('iChannel2.png'),
-            Perlin: getImageWidthName2noise('Perlin.png'),
+            iChannel3: getImageWidthName2noise('iChannel3.png'),
+            iChannel4: getImageWidthName2noise('iChannel4.png'),
+            blueNoise: getImageWidthName2noise('blueNoise.png'),
+            Perlin: getImageWidthName2noise('Perlin.png')
         },
         fragmentShader: resolveIncludes(shader)
     });
 
     store.Viewer?.postProcessStages.add(stage);
-});
-
-onUnmounted(() => {
-    gui.destroy();
 });
 </script>
 

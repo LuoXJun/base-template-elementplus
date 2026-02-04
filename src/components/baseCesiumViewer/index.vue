@@ -39,6 +39,8 @@ const init = async () => {
         destination: Cesium.Rectangle.fromDegrees(60, 10, 150, 50)
     });
 
+    viewer.scene.debugShowFramesPerSecond = true;
+
     store.Viewer = markRaw(viewer);
 
     // 默认地形
