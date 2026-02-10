@@ -8,6 +8,11 @@ czm_lightColor //太阳光颜色
 v_textureCoordinates //归一化坐标
 czm_branchFreeTernary(bool,a,b)//三元运算符
 
+czm_modelView //将模型坐标转换为眼坐标的矩阵。
+czm_inverseModelView //将眼坐标转换为模型坐标的矩阵。
+czm_view //将世界坐标转换为眼坐标的矩阵。
+czm_inverseView  //将眼坐标转换为世界坐标的矩阵。
+
 float near = czm_currentFrustum.x; //近平面
 float far = czm_currentFrustum.y; //远平面
 

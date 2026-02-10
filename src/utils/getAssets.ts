@@ -9,3 +9,8 @@ export const getImageWidthName = (name: string) => {
 export const getImageWidthName2noise = (name: string) => {
     return new URL(`../assets/noise/${name}`, import.meta.url).href;
 };
+
+/**通过名字获取法线贴图*/
+export const getImageWidthName2normals = (name: string) => {
+    return new URL(`../assets/normals/${name}`, import.meta.url).href;
+};

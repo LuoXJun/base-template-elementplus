@@ -1,5 +1,5 @@
 // Auto-generated from volumeCloudEffect.glsl
-// Hash: 99dfd944
+// Hash: cb44bcaf
 // Generated at: 罗君
 
 const VOLUMECLOUDEFFECT_SOURCE = `
@@ -22,115 +22,136 @@ struct PostGeometryData {
 #include <post_getGeometryData>
 PostGeometryData geometry;
 
-uniform sampler2D iChannel0;
-uniform sampler2D iChannel1;
-uniform sampler2D iChannel3;
-uniform sampler2D iChannel4;
+uniform sampler2D iChannel2;
 uniform sampler2D blueNoise;
 
 // 基本定义 
-#define PARAMS_LINEAR_RAMP  vec2(0.00, 0.00)
-#define PARAMS_CUMULUS      vec2(0.4, 0.6)
-#define PARAMS_CUMULONIMBUS vec2(0.70, 0.98)
-#define SCALE 1000.0
-#define OFFSET vec2(4.0, 8.0)
-#define SHAPE PARAMS_CUMULUS
-#define PLANET_CENTER vec3(0.)
-#define PLANET_RADIUS longR
-#define CLOUD_COVERAGE 0.3 // Fixed cloud coverage
-//#define CLOUD_COVERAGE (0.35 - sin(iTime * 0.02 + 3.1415) * 0.2) // Animated cloud coverage
-#define CLOUD_DENSITY 1.0
-#define CLOUD_PLANE_BOT 8000.0
-#define CLOUD_PLANE_TOP 13000.0
-#define iTime czm_frameNumber/120.
-#define TEMPORAL_ACCUMULATION_CLOUDS 0.85
+#define MAX_STEPS 64
+#define MAX_STEPS_LIGHTS 10
+#define earthRadius longR
+#define iTime czm_frameNumber/120. 
+#define ABSORPTION_COEFFICIENT 0.9
+#define SCATTERING_ANISO 0.3
+#define minCloudHeight 30000.
+#define maxCloudHeight 35000.
+#define CLOUDS_THICKNESS maxCloudHeight - minCloudHeight
+#define _BlueNoiseCoords vec4(512.,512.,258.,258.)
 
-float sq(float x) {
-  return x * x;
-}
-float PhaseR(float costh) {
-  return (1.0 + sq(costh)) * 0.06;
-}
-float PhaseM(float costh, float g) {
-  g = min(g, 0.9381);
-  float k = 1.55 * g - 0.55 * sq(g) * g;
-  float a = 1.0 - sq(k);
-  float b = 12.57 * sq(1.0 - k * costh);
-  return a / b;
+//射线与球体相交, x 到球体最近的距离， y 穿过球体的距离
+//原理是将射线方程(x = o + dl)带入球面方程求解(|x - c|^2 = r^2)
+vec2 raySphereDst(vec3 earthCenter, float radius, vec3 rayOrigin, vec3 rayDir) {
+  vec3 oc = rayOrigin - earthCenter;//earthCenter
+  float b = dot(rayDir, oc);
+  float c = dot(oc, oc) - radius * radius;
+  float t = b * b - c; // t > 0有两个交点, = 0 相切， < 0 不相交
+
+  float delta = sqrt(max(t, 0.0));
+  float dstToSphere = max(-b - delta, 0.0);
+  float dstInSphere = max(-b + delta - dstToSphere, 0.0);
+  return vec2(dstToSphere, dstInSphere);
 }
 
-float saturate(float x) {
-  return clamp(x, 0., 1.);
-}
-float Noise(vec2 x) {
-  return textureLod(iChannel0, x * 0.002, 0.0).x;
-}
-float CloudShape(float x, float y, vec2 shapeParams) {
-  shapeParams.x *= shapeParams.y;
-  shapeParams.y = 1.0 / (1.0 - shapeParams.y);
-  float anvil = 1.0 - sq(abs(y - 0.5) * 2.0);
-  return saturate(x - anvil * shapeParams.x - pow(y, shapeParams.y));
-}
-float remap01(float x, float a, float b) {
-  return clamp((x - a) / (b - a), 0.0, 1.0);
-}
+/*
+		计算相机发出的射线与云层范围的相交情况
+		返回值：
+			dstToCloudLayer  到云层的最近距离
+			dstInCloudLayer  在云层中穿过的距离
+	*/
+vec2 rayCloudLayerDst(vec3 earthCenter, vec3 rayOrigin, vec3 rayDir) {
 
-float Height(vec3 p) {
-  return length(p - PLANET_CENTER) - PLANET_RADIUS;
-}
+  vec2 cloudDstMin = raySphereDst(earthCenter, minCloudHeight + earthRadius, rayOrigin, rayDir);
+  vec2 cloudDstMax = raySphereDst(earthCenter, maxCloudHeight + earthRadius, rayOrigin, rayDir);
 
-float Cloud(vec3 p) {
-  vec2 wind = vec2(0, iTime);
-  float y = (Height(p) - CLOUD_PLANE_BOT) / (CLOUD_PLANE_TOP - CLOUD_PLANE_BOT);
-  const float scale = 1.0 / SCALE;
-  float n = Noise(p.xz * scale + OFFSET + vec2(-0.2, 0.3) * iTime);
-  float d = CloudShape(n - 1.0 + CLOUD_COVERAGE * 2.0, y, SHAPE);
-
-  float n2 = Noise(p.xz * scale * 8.0 - vec2(0.2, 0.0) * iTime);
-  float n3 = Noise(p.xz * scale * 40.0 + vec2(1.0, 0.0) * iTime);
-
-  d = remap01(d, (1.0 - n2) * 0.3, 1.0);
-  d = remap01(d, (1.0 - n3) * 0.1, 1.0);
-
-  d *= smoothstep(0.0, 0.75, y);
-
-  return sq(d) * CLOUD_DENSITY;
-}
-
-vec3 Lum(vec3 p, vec3 ld, float costh, float ext, float dither) {
-  float le = 0.0;
-  float ae = 0.0;
-  int sc = 4;
-  float ss = (CLOUD_PLANE_TOP - CLOUD_PLANE_BOT) / float(sc);
-  for(int j = 0; j < sc; j++) {
-    vec3 lp = p + ld * (float(j) + dither) * ss;
-    le += Cloud(lp) * ss;
+		// 射线到云层的最近距离
+  float dstToCloudLayer = 0.0;
+		// 射线穿过云层的距离
+  float dstInCloudLayer = 0.0;
+  float d = distance(rayOrigin, earthCenter);
+    // 在地表上
+  if(d <= minCloudHeight + earthRadius) {
+    vec3 startPos = rayOrigin + rayDir * cloudDstMin.y;
+    if(wgs84_getHeight(startPos) >= 0.) {
+      dstToCloudLayer = cloudDstMin.y;
+      dstInCloudLayer = cloudDstMax.y - cloudDstMin.y;
+    }
+    return vec2(dstToCloudLayer, dstInCloudLayer);
   }
-  sc = 2;
-  for(int j = 0; j < sc; j++) {
-    vec3 lp = p + vec3(0, 1, 0) * (float(j) + dither) * ss;
-    ae += Cloud(lp) * ss;
+
+		// 在云层内
+  else if(d > minCloudHeight + earthRadius && d <= maxCloudHeight + earthRadius) {
+    dstToCloudLayer = 0.;
+    dstInCloudLayer = cloudDstMin.y > 0. ? cloudDstMin.x : cloudDstMax.y;
+    return vec2(dstToCloudLayer, dstInCloudLayer);
   }
-  float single = exp(-le) * PhaseM(costh, 0.85);
-  float multi = exp(-le * 0.05) * PhaseR(costh);
-  multi *= 1.0 - exp(-ext * 6e2);
-  return vec3(single + multi, (exp(-ae) + exp(-ae * 0.05)) * 0.5, 0);
+
+		// 在云层外
+  else {
+    dstToCloudLayer = cloudDstMax.x;
+    dstInCloudLayer = cloudDstMin.y > 0. ? cloudDstMin.x - dstToCloudLayer : cloudDstMax.y;
+  }
+  return vec2(dstToCloudLayer, dstInCloudLayer);
 }
 
-vec2 SphereIntersection(vec3 rayStart, vec3 rayDir, vec3 sphereCenter, float sphereRadius) {
-  vec3 oc = rayStart - sphereCenter;
-  float b = dot(oc, rayDir);
-  float c = dot(oc, oc) - sq(sphereRadius);
-  float h = sq(b) - c;
-  if(h < 0.0) {
-    return vec2(-1.0, -1.0);
-  } else {
-    h = sqrt(h);
-    return vec2(-b - h, -b + h);
-  }
+// 
+#define ABSORPTION 5.e-5
+#define SCATTERING 7.e-4
+#define UINT_MAX float(0xffffffffu)
+#define CLOUDS_SCALE 0.1e-3
+#define CLOUDS_SPEED vec3(0.25, 0.037, 0.0)*0.5
+#define CLOUD_SMOOTHNESS 0.65
+#define CLOUD_COVERAGE 0.9
+#define DENSITY 1.
+
+uint hashPCGu(uint x) {
+  uint state = x * 747796405u + 2891336453u;
+  uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+  return (word >> 22u) ^ word;
 }
-vec2 PlanetIntersection(vec3 rayStart, vec3 rayDir) {
-  return SphereIntersection(rayStart, rayDir, PLANET_CENTER, PLANET_RADIUS);
+float hashPCG(vec2 x) {
+  x += 3250000.;
+  x = abs(x);
+  uvec2 p = uvec2(floor(x));
+  return float(hashPCGu(149u * p.x ^ 233u * p.y)) / UINT_MAX;
+    //return float(hashPCGu(p.x + hashPCGu(p.y))) / UINT_MAX;
+}
+float hashPCG(vec3 x) {
+  x += 3250000.;
+  x = abs(x);
+  uvec3 p = uvec3(floor(x));
+  return float(hashPCGu(149u * p.x ^ 233u * p.y ^ 157u * p.z)) / UINT_MAX;
+}
+float vnoise3(vec3 x) {
+  vec3 i = floor(x);
+  vec3 f = fract(x);
+  f = f * f * (3.0 - 2.0 * f);
+
+  return mix(mix(mix(hashPCG(i + vec3(0, 0, 0)), hashPCG(i + vec3(1, 0, 0)), f.x), mix(hashPCG(i + vec3(0, 1, 0)), hashPCG(i + vec3(1, 1, 0)), f.x), f.y), mix(mix(hashPCG(i + vec3(0, 0, 1)), hashPCG(i + vec3(1, 0, 1)), f.x), mix(hashPCG(i + vec3(0, 1, 1)), hashPCG(i + vec3(1, 1, 1)), f.x), f.y), f.z);
+}
+
+float fbmCloud(vec3 p) {
+  p = CLOUDS_SCALE * p + iTime * CLOUDS_SPEED;
+  float G = exp2(-CLOUD_SMOOTHNESS);
+  float f = 1.0;
+  float a = 0.5;
+  float t = 0.0;
+
+  for(int i = ZERO; i < 6; i++) {
+    float n = vnoise3(f * p);
+    t += a * n;
+    f *= 2.5789;
+    a *= G;
+  }
+
+    //t = clamp(1.0*t, 0.0, 1.0);
+
+  t *= 0.4;
+
+  float cov = 0.6 - 0.35 * CLOUD_COVERAGE;
+
+  t *= smoothstep(cov, cov + 0.05, t);
+    //t = clamp(t, 0.0, 1.0);
+
+  return t * DENSITY;
 }
 
 void main() {
@@ -139,98 +160,45 @@ void main() {
 
   vec3 ro = czm_viewerPositionWC;
   vec3 rd = normalize(geometry.positionWC - czm_viewerPositionWC);
+  vec3 color = vec3(1.);
 
-  vec3 dither = textureLod(iChannel1, gl_FragCoord.xy / vec2(1024.), 0.0).xyz;
-  dither = fract(dither + (0.61803398875 * mod(czm_frameNumber, 256.)));
+  vec2 distToSphere = rayCloudLayerDst(vec3(0.), ro, rd);
+  float distanceToCloud = distance(geometry.positionWC, ro);
+  if(distToSphere.y <= 0. || distanceToCloud <= distToSphere.x) {
 
-  vec3 sunPos = czm_sunPositionWC;
-  vec3 sunDir = czm_sunDirectionWC;
-
-  float costh = dot(rd, sunDir);
-
-  vec2 t1 = SphereIntersection(ro, rd, PLANET_CENTER, PLANET_RADIUS + CLOUD_PLANE_BOT);
-  vec2 t2 = SphereIntersection(ro, rd, PLANET_CENTER, PLANET_RADIUS + CLOUD_PLANE_TOP);
-  vec2 tp = PlanetIntersection(ro, rd);
-
-  float enter = t1.y;
-  float exit = t2.y;
-  if(t1.x > 0.0) {
-    exit = t1.x;
-  }
-  if(t2.x > 0.0) {
-    enter = t2.x;
-  }
-  if(length(ro) > CLOUD_PLANE_BOT && length(ro) < CLOUD_PLANE_TOP) {
-    enter = 0.0;
-  }
-  if(tp.x > 0.0) {
-    enter = min(enter, tp.x);
-    exit = min(exit, tp.x);
+    out_FragColor = geometry.sceneColor;
+    return;
   }
 
-  enter = max(0.0, enter);
+  float stepLength = distToSphere.y / float(MAX_STEPS * 2);
 
-  float depth = 0.0;
+// 采用蓝噪音偏移，保证减少步进次数后的渲染效果
+  // float blueNoise = texture(blueNoise, v_textureCoordinates * _BlueNoiseCoords.xy + _BlueNoiseCoords.zw).r;
+  // stepLength *= blueNoise * 1.2;
 
-  vec3 s = vec3(0.0);
-  float tsm = 1.0;
-  int sc = 64;
-  float ss = 100.0;
-  float t = enter + ss * 0.5;
-  for(int i = 0; i < sc; i++) {
-    vec3 p = ro + rd * (t + ss * dither.x);
+  float tCurrent = distToSphere.x;
 
-    float h = Height(p);
-    if(h < CLOUD_PLANE_BOT || h > CLOUD_PLANE_TOP) {
+  // 随机偏移射线起点以减少带状伪影
+  // tCurrent += stepLength * (hashPCG(v_textureCoordinates) * 2.0 - 1.0);
+
+  float tmax = distToSphere.x + distToSphere.y;
+  float totalDensity = 0.;
+
+  while(tCurrent < tmax) {
+
+    vec3 samplePosition = ro + tCurrent * rd;
+    float density = fbmCloud(samplePosition);
+
+    tCurrent += stepLength;
+    totalDensity += density;
+
+    if(totalDensity >= 1.)
       break;
-    }
 
-    float le = Cloud(p);
-    vec3 ll = vec3(0.0);
-    if(le > 0.0) {
-      ll = Lum(p, sunDir, costh, le, dither.y);
-      vec4 at;
-    }
-
-    float lt = exp(-le * ss);
-    float is = tsm * (1.0 - lt);
-
-    depth = mix(depth, t, sq(tsm));
-
-    s += ll * is;
-    tsm *= lt;
-
-    if(tsm < 1e-5) {
-      break;
-    }
-
-    t += ss;
-    ss *= 1.05;
-
-    if(t > exit) {
-      break;
-    }
   }
 
-  vec4 prev = vec4(1.);//texture(iChannel2, uv);
+  out_FragColor = vec4(mix(geometry.sceneColor.rgb, color, totalDensity), 1.);
 
-  float temporalStability = TEMPORAL_ACCUMULATION_CLOUDS;
-    // Doesn't work for some reason
-  float screenHash = czm_viewport.z + czm_viewport.w;
-  float sunHash = sunPos.x + sunPos.y;
-    // Doesn't work for some reason
-    //temporalStability = GetTemporalStability(iFrame, sunHash, sunHashPrev, TEMPORAL_ACCUMULATION_CLOUDS, 50.0);
-
-    // vec4(direct, ambient, alpha, weighted depth)
-  vec4 fragColor = max(geometry.sceneColor, mix(vec4(s.xy / (1.0 - tsm), 1.0 - tsm, depth), prev, temporalStability));
-
-  if(gl_FragCoord.x < 1.0 && gl_FragCoord.y < 1.0) {
-        // Store some data in corner pixel
-    fragColor.z = screenHash;
-    fragColor.w = sunHash;
-  }
-
-  out_FragColor = fragColor;
 }
 `;
 
@@ -238,19 +206,7 @@ void main() {
 export const VOLUMECLOUDEFFECT_UNIFORMS = [
   {
     "type": "sampler2D",
-    "name": "iChannel0"
-  },
-  {
-    "type": "sampler2D",
-    "name": "iChannel1"
-  },
-  {
-    "type": "sampler2D",
-    "name": "iChannel3"
-  },
-  {
-    "type": "sampler2D",
-    "name": "iChannel4"
+    "name": "iChannel2"
   },
   {
     "type": "sampler2D",
@@ -267,7 +223,7 @@ export class VolumeCloudEffectShader {
     this.source = VOLUMECLOUDEFFECT_SOURCE;
     this.uniforms = VOLUMECLOUDEFFECT_UNIFORMS;
     this.attributes = VOLUMECLOUDEFFECT_ATTRIBUTES;
-    this.hash = '99dfd944';
+    this.hash = 'cb44bcaf';
   }
   
   getVertexShader() {

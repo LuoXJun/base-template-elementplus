@@ -62,6 +62,14 @@ export const routeConfig: RouteOptions[] = [
                 name: 'volumeCloud',
                 type: 'link',
                 title: '体积云'
+            },
+            {
+                path: 'water',
+                sort: 5,
+                component: 'shader/water',
+                name: 'water',
+                type: 'link',
+                title: '水特效'
             }
         ]
     }
