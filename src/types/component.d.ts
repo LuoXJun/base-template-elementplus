@@ -30,6 +30,7 @@ declare module 'vue' {
     BaseTable: typeof import('./../components/baseTable/baseTable.vue')['default']
     BaseTablePagination: typeof import('./../components/baseTablePagination/baseTablePagination.vue')['default']
     BaseTabs: typeof import('./../components/baseTabs/baseTabs.vue')['default']
+    BaseTimeline: typeof import('./../components/baseTimeline/baseTimeline.vue')['default']
     BaseTransfer: typeof import('./../components/baseTransfer/baseTransfer.vue')['default']
     BaseTree: typeof import('./../components/baseTree/baseTree.vue')['default']
     BaseVerifyCode: typeof import('./../components/baseVerifyCode/baseVerifyCode.vue')['default']
