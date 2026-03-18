@@ -1,6 +1,5 @@
 <template>
     <div>
-        <div ref="canvasRef" style="height: 400px; width: 100%"></div>
         <!-- 时间轴 -->
         <el-row>
             <el-col :span="12">
@@ -26,18 +25,6 @@
 
 <script setup lang="ts">
 import baseTimeline from '@/components/baseTimeline/baseTimeline.vue';
-import { createCanvas } from './createCanvas';
-// @ts-ignore
-import json from '/public/realy_data.json';
-
-//绘制动画
-const station = [
-    2038.218, 2905.794, 3369.672, 4212.733, 5197.153, 5649.076, 6610.487, 7246.178, 7604.179,
-    8524.752, 9262.44, 10244.627, 10626.736, 11872.464, 12281.853, 12739.08, 13450.322, 14656.82,
-    15363.889, 15919.249, 16575.455, 17436.166, 18284.004, 19094.211, 19493.932, 20678.092,
-    21372.52, 21886.221, 22731.029, 23573.053, 23776.785, 24853.172, 25561.684, 26140.209,
-    26857.051, 27777.047, 28869.1, 29128.088, 29739.539, 30987.121
-];
 
 //
 const baseTimelineRef = useTemplateRef('baseTimelineRef');
@@ -81,17 +68,6 @@ const stop = () => {
 const onChange = (time: string) => {
     currentPlayTime.value = time;
 };
-
-//
-const canvasRef = useTemplateRef('canvasRef');
-onMounted(() => {
-    const { canvas, resizeCanvas } = createCanvas(station, json.field_data.Q);
-    canvasRef.value?.appendChild(canvas);
-
-    nextTick(() => {
-        resizeCanvas();
-    });
-});
 </script>
 
 <style scoped></style>
