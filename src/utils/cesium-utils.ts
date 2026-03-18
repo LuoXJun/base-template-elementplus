@@ -1138,8 +1138,6 @@ export class DrawGeometry {
 
     //动态点,鼠标位置
     private lastPoint = new Cesium.Cartesian3();
-    private lastPointLonlat = new Cesium.Cartographic();
-    private firstPointLonlat = new Cesium.Cartographic();
     private viewer: Cesium.Viewer;
     // 动态entity,绘制结束后清除
     private dynamicEntity: Cesium.Entity | undefined;
@@ -1175,41 +1173,84 @@ export class DrawGeometry {
         };
     }
 
-    draw(type: GeometryType) {
-        if (!this.viewer) return alert('找不到viewer');
-        this.type = type;
+    drawPoint(position: Cesium.Cartesian3) {
+        const { options } = this;
+        const lonlng = Cesium.Cartographic.fromCartesian(position);
+        const point = new Cesium.Entity({
+            name: 'point',
+            position,
+            point: {
+                pixelSize: 10,
+                color: options.fillColor,
+                outlineColor: options.strokeColor,
+                outlineWidth: options.strokeWidth,
+                heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+                disableDepthTestDistance: Number.POSITIVE_INFINITY
+            },
+            label: {
+                text: `${Cesium.Math.toDegrees(lonlng.longitude)},${Cesium.Math.toDegrees(lonlng.latitude)},${lonlng.height}`,
+                pixelOffset: new Cesium.Cartesian2(0, -30),
+                heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+                verticalOrigin: Cesium.VerticalOrigin.BOTTOM
+            }
+        });
+        return point;
+    }
 
-        let { handler, viewer, options } = this;
+    drawLine(positions: Cesium.Cartesian3[], isEntity = true) {
+        const { options } = this;
+        const params = {
+            positions,
+            width: options.strokeWidth,
+            material: options.strokeColor,
+            clampToGround: true,
+            classificationType: Cesium.ClassificationType.BOTH
+        };
+
+        const polyline = new Cesium.Entity({
+            name: 'line',
+            polyline: params
+        });
+
+        return isEntity ? polyline : params;
+    }
+
+    // 根据世界坐标获取四至坐标
+    getRectangleFromCartesian = (firstPoint: Cesium.Cartesian3, lastPoint: Cesium.Cartesian3) => {
+        const firstPointLonlat = new Cesium.Cartographic();
+        const lastPointLonlat = new Cesium.Cartographic();
+        Cesium.Cartographic.fromCartesian(firstPoint, undefined, firstPointLonlat);
+        Cesium.Cartographic.fromCartesian(lastPoint, undefined, lastPointLonlat);
+        // 计算矩形范围
+        this.west = Math.min(firstPointLonlat.longitude, lastPointLonlat.longitude);
+        this.south = Math.min(firstPointLonlat.latitude, lastPointLonlat.latitude);
+        this.east = Math.max(firstPointLonlat.longitude, lastPointLonlat.longitude);
+        this.north = Math.max(firstPointLonlat.latitude, lastPointLonlat.latitude);
+        return Cesium.Rectangle.fromRadians(this.west, this.south, this.east, this.north);
+    };
+
+    draw(type: GeometryType) {
+        if (!this.viewer) {
+            return alert('找不到viewer');
+        }
+        this.type = type;
+        const { handler, viewer, options } = this;
+
+        const baseLineOptions = {
+            width: options.strokeWidth,
+            material: options.strokeColor,
+            clampToGround: true,
+            classificationType: Cesium.ClassificationType.BOTH
+        };
 
         handler.setInputAction((e: any) => {
             const p = viewer.scene.pickPosition(e.position);
-            const lonlng = Cesium.Cartographic.fromCartesian(p);
-
             if (type === 'point') {
-                const entity = viewer.entities.add({
-                    name: type,
-                    position: p,
-                    point: {
-                        pixelSize: 10,
-                        color: options.fillColor,
-                        outlineColor: options.strokeColor,
-                        outlineWidth: options.strokeWidth,
-                        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-                        disableDepthTestDistance: Number.POSITIVE_INFINITY
-                    },
-                    label: {
-                        text: `${Cesium.Math.toDegrees(lonlng.longitude)},${Cesium.Math.toDegrees(lonlng.latitude)},${lonlng.height}`,
-                        pixelOffset: new Cesium.Cartesian2(0, -30),
-                        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-                        verticalOrigin: Cesium.VerticalOrigin.BOTTOM
-                    }
-                });
-                this.entities.push(entity);
+                this.entities.push(viewer.entities.add(this.drawPoint(p)));
             }
 
             if (type === 'line') {
                 this.pts.push(p);
-
                 if (!this.dynamicEntity || !viewer.entities.contains(this.dynamicEntity)) {
                     this.dynamicEntity = viewer.entities.add({
                         name: type,
@@ -1217,24 +1258,20 @@ export class DrawGeometry {
                             positions: new Cesium.CallbackProperty(() => {
                                 return [...this.pts, this.lastPoint];
                             }, false),
-                            width: options.strokeWidth,
-                            material: options.strokeColor,
-                            clampToGround: true,
-                            classificationType: Cesium.ClassificationType.BOTH
+                            ...baseLineOptions
                         }
                     });
                 }
             }
+
             if (type === 'polygon') {
                 this.pts.push(p);
-
                 if (!this.dynamicEntity || !viewer.entities.contains(this.dynamicEntity)) {
                     this.dynamicEntity = viewer.entities.add({
                         name: type,
                         polygon: {
                             hierarchy: new Cesium.CallbackProperty(() => {
                                 const positions = [...this.pts, this.lastPoint];
-
                                 return new Cesium.PolygonHierarchy(positions);
                             }, false),
                             material: options.fillColor,
@@ -1244,57 +1281,24 @@ export class DrawGeometry {
                             positions: new Cesium.CallbackProperty(() => {
                                 return [...this.pts, this.lastPoint, this.pts[0]];
                             }, false),
-                            width: options.strokeWidth,
-                            material: options.strokeColor,
-                            clampToGround: true,
-                            classificationType: Cesium.ClassificationType.BOTH
+                            ...baseLineOptions
                         }
                     });
                 }
             }
+
             if (type === 'rectangle') {
                 this.pts.push(p);
 
-                if (this.pts.length === 2) return this.inTheFinally();
+                if (this.pts.length === 2) {
+                    return this.inTheFinally();
+                }
 
                 if (!this.dynamicEntity || !viewer.entities.contains(this.dynamicEntity)) {
                     this.dynamicEntity = viewer.entities.add({
                         rectangle: {
                             coordinates: new Cesium.CallbackProperty(() => {
-                                Cesium.Cartographic.fromCartesian(
-                                    this.lastPoint,
-                                    undefined,
-                                    this.lastPointLonlat
-                                );
-                                Cesium.Cartographic.fromCartesian(
-                                    this.pts[0],
-                                    undefined,
-                                    this.firstPointLonlat
-                                );
-                                // 计算矩形范围
-                                this.west = Math.min(
-                                    this.firstPointLonlat.longitude,
-                                    this.lastPointLonlat.longitude
-                                );
-                                this.south = Math.min(
-                                    this.firstPointLonlat.latitude,
-                                    this.lastPointLonlat.latitude
-                                );
-                                this.east = Math.max(
-                                    this.firstPointLonlat.longitude,
-                                    this.lastPointLonlat.longitude
-                                );
-                                this.north = Math.max(
-                                    this.firstPointLonlat.latitude,
-                                    this.lastPointLonlat.latitude
-                                );
-
-                                return Cesium.Rectangle.fromRadians(
-                                    this.west,
-                                    this.south,
-                                    this.east,
-                                    this.north
-                                );
+                                return this.getRectangleFromCartesian(this.pts[0], this.lastPoint);
                             }, false),
                             material: options.fillColor
                         },
@@ -1309,36 +1313,38 @@ export class DrawGeometry {
                                             this.north
                                         )
                                     );
-
                                     return [...positions, positions[0]];
                                 }
-
                                 return [...this.pts, this.lastPoint];
                             }, false),
-                            width: options.strokeWidth,
-                            material: options.strokeColor,
-                            clampToGround: true,
-                            classificationType: Cesium.ClassificationType.BOTH
+                            ...baseLineOptions
                         }
                     });
                 }
             }
         }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-        // 获取当前鼠标位置
-        handler.setInputAction((e: any) => {
-            const p = viewer.scene.pickPosition(e.endPosition);
+        this.handleMouseMove();
+        this.handleMouseRightClick();
+    }
+
+    // 鼠标移动事件
+    handleMouseMove() {
+        this.handler.setInputAction((e: any) => {
+            const p = this.viewer.scene.pickPosition(e.endPosition);
             Cesium.Cartesian3.clone(p, this.lastPoint);
         }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+    }
 
-        handler.setInputAction(() => {
+    handleMouseRightClick() {
+        this.handler.setInputAction(() => {
             this.inTheFinally();
         }, Cesium.ScreenSpaceEventType.RIGHT_CLICK);
     }
 
     // 结束当前绘制
     inTheFinally() {
-        let { viewer, pts, east, west, north, south, type, options } = this;
+        const { viewer, pts, east, west, north, south, type, options } = this;
         // 结束绘制时清除动态entity并添加最终entity
         if (this.dynamicEntity) {
             viewer.entities.remove(this.dynamicEntity);
@@ -1346,18 +1352,7 @@ export class DrawGeometry {
         }
 
         if (type === 'line' && pts.length >= 2) {
-            const entity = viewer.entities.add({
-                name: type,
-                polyline: {
-                    positions: [...pts],
-                    width: options.strokeWidth,
-                    material: options.strokeColor,
-                    clampToGround: true,
-                    classificationType: Cesium.ClassificationType.BOTH
-                }
-            });
-
-            this.entities.push(entity);
+            this.entities.push(viewer.entities.add(this.drawLine([...pts]) as Cesium.Entity));
         }
 
         if (type === 'polygon' && pts.length > 2) {
@@ -1368,13 +1363,7 @@ export class DrawGeometry {
                     material: options.fillColor,
                     classificationType: Cesium.ClassificationType.BOTH
                 },
-                polyline: {
-                    positions: [...pts, pts[0]],
-                    width: options.strokeWidth,
-                    material: options.strokeColor,
-                    clampToGround: true,
-                    classificationType: Cesium.ClassificationType.BOTH
-                }
+                polyline: viewer.entities.add(this.drawLine([...pts, pts[0]], false) as object)
             });
             this.entities.push(entity);
         }
@@ -1390,21 +1379,20 @@ export class DrawGeometry {
                     coordinates: Cesium.Rectangle.fromCartesianArray([pts[0], pts[1]]),
                     material: options.fillColor
                 },
-                polyline: {
-                    positions: [...positions, positions[0]],
-                    width: options.strokeWidth,
-                    material: options.strokeColor,
-                    clampToGround: true,
-                    classificationType: Cesium.ClassificationType.BOTH
-                }
+                polyline: viewer.entities.add(
+                    this.drawLine([...positions, positions[0]], false) as object
+                )
             });
             this.entities.push(entity);
         }
 
         pts.length = 0;
     }
+
     clear() {
-        if (!this.viewer) return alert('找不到viewer');
+        if (!this.viewer) {
+            return alert('找不到viewer');
+        }
         this.entities.forEach((entity) => {
             this.viewer.entities.remove(entity);
         });
