@@ -15,6 +15,7 @@ declare module 'vue' {
     BaseDialog: typeof import('./../components/baseDialog/baseDialog.vue')['default']
     BaseDrawer: typeof import('./../components/baseDrawer/baseDrawer.vue')['default']
     BaseForm: typeof import('./../components/baseForm/baseForm.vue')['default']
+    BaseFormItem: typeof import('./../components/baseForm/baseFormItem.vue')['default']
     BaseHorizontalMenu: typeof import('../components/baseHorizontalMenu/baseHorizontalMenuAside.vue')['default']
     BaseHorizontalMenuAside: typeof import('./../components/baseMenuHorizontal/baseHorizontalMenuAside.vue')['default']
     BaseHorizontalMenuHeader: typeof import('./../components/baseMenuHorizontal/baseHorizontalMenuHeader.vue')['default']

@@ -1,8 +1,8 @@
 // 允许的表单元素
-type ItemType =
+type itemType =
     | 'input'
     | 'select'
-    | 'treeSelect'
+    | 'select-tree'
     | 'password'
     | 'textarea'
     | 'radio'
@@ -10,13 +10,14 @@ type ItemType =
     | 'checkbox'
     | 'slot'
     | 'date'
+    | 'number'
     | 'daterange';
 
-type FormOption = {
+interface FormOption extends Record<string, any> {
     label: string;
-    value: string | number | boolean;
+    value: any;
     border?: boolean;
-};
+}
 
 type RulesRequired = {
     required: boolean;
@@ -66,19 +67,23 @@ type Rules = (RulesRequired | RulesAuto | RulesMinx | RulesCustom)[];
 
 type TSelectTreeType = { label: string; value: string | number; children?: TSelectTreeType[] };
 
-// 单个表单元素属性
+/**
+ * 使用命名参数模式构件泛型约束
+ * */
 interface IformItem<
     T = {
         data?: TSelectTreeType[];
         filed: string;
     }
 > {
+    data?: 'data' extends keyof T ? T['data'] : TSelectTreeType[];
     /**prop、元素绑定的key、插槽名字*/
     filed: T['filed'];
     label: string;
-    type: ItemType;
+    type: itemType;
     labelWidth?: string;
     labelPosition?: 'left' | 'right' | 'top';
+    props?: Record<string, string>;
     rules?: Rules;
     // 控制显隐
     isShow?: boolean;
@@ -115,27 +120,14 @@ interface IformItem<
         options: FormOption[];
     };
     select?: {
-        config?: {
-            // 是否可以多选
-            multiple?: boolean;
-            // 是否可筛选
-            filterable?: boolean;
-            //是否允许用户创建新条目， 只有当 filterable 设置为 true 时才会生效。
-            allowCreate?: boolean;
-        };
+        // 是否可以多选
+        multiple?: boolean;
+        // 是否可筛选
+        filterable?: boolean;
+        //是否允许用户创建新条目， 只有当 filterable 设置为 true 时才会生效。
+        allowCreate?: boolean;
+        props?: FormOption;
         options: FormOption[];
-    };
-    treeSelect?: {
-        config?: {
-            // 是否可以多选
-            multiple?: boolean;
-            // 是否可筛选
-            filterable?: boolean;
-            //是否允许用户创建新条目， 只有当 filterable 设置为 true 时才会生效。
-            allowCreate?: boolean;
-        };
-        data?: 'data' extends keyof T ? T['data'] : TSelectTreeType[];
-        props?: Record<string, string>;
     };
     date?: {
         valueFormat: string;

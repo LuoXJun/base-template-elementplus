@@ -1,7 +1,7 @@
 <template>
     <div>
         <baseForm v-model="form" :form-item-list="formConfig" label-width="120px">
-            <template #slot>
+            <template #slot="{ scope }">
                 <el-row>
                     <el-col :span="20">
                         <baseVerifyCode
@@ -17,6 +17,7 @@
                         </el-button>
                     </el-col>
                 </el-row>
+                {{ scope }}
             </template>
         </baseForm>
     </div>
@@ -27,7 +28,7 @@ import baseForm from '@/components/baseForm/baseForm.vue';
 import baseVerifyCode from '@/components/baseVerifyCode/baseVerifyCode.vue';
 import { formConfig } from './config';
 
-const form = ref<Partial<Record<ItemType, any>>>({});
+const form = ref<Partial<Record<itemType, any>>>({});
 
 const verifyCode = ref();
 const refreshCodeRef = useTemplateRef('refreshCodeRef');
