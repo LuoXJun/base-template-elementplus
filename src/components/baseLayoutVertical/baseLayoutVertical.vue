@@ -8,7 +8,7 @@
                 </el-menu>
             </div>
             <div class="lxj-content">
-                <router-view></router-view>
+                <router-view />
             </div>
         </div>
     </div>

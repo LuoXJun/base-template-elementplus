@@ -25,10 +25,14 @@ declare global {
     }
 
     interface IbaseInstanceConfig extends AxiosRequestConfig {
-        interceptors?: IbaseRequestConfig;
+        interceptors?: (instance: AxiosInstance) => IbaseRequestConfig;
         /**是否显示全局加载框*/
         isLoading?: boolean;
         /**显示加载框时的文字*/
         loadingText?: string;
+        /**是否显示成功提示，默认 false*/
+        isSuccessMsg?: boolean;
+        /**成功提示文字，不传则取接口返回的 message/msg，都无则用默认文案*/
+        successMsg?: string;
     }
 }

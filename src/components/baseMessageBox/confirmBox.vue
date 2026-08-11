@@ -37,10 +37,10 @@
                             fill="#E37318"
                         />
                     </svg>
-                    <img v-else src="@/assets/images/error-icon.svg" style="width: 24px" />
+                    <img v-else src="./images/error-icon.svg" style="width: 24px" />
                     <span>{{ title }}</span>
                 </div>
-                <img src="@/assets/images/close.svg" @click="handleCancel" />
+                <img src="./images/close.svg" @click="handleCancel" />
             </div>
             <div class="confirmDialog-content">
                 <slot name="content">
@@ -147,7 +147,11 @@ function handleClosed() {
                     }
                 }
                 .confirmDialog-content {
-                    @include textLv2;
+                    font-family: 'PingFang SC';
+                    font-size: 14px;
+                    font-style: normal;
+                    font-weight: 400;
+                    line-height: normal;
                     margin-top: 16px;
                     line-height: 22px;
                     color: rgba(0, 0, 0, 0.6);

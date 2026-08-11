@@ -22,9 +22,7 @@
         // 检查函数隐式any
         "noImplicitThis": true,
         "alwaysStrict": true,
-        // 检查未使用参数
         "noUnusedLocals": true,
-        // 未使用的参数报错
         "noUnusedParameters": true,
         // 不是所有函数都有返回值时报错
         "noImplicitReturns": false,

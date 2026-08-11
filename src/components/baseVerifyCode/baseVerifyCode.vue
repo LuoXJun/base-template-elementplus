@@ -1,15 +1,13 @@
 <template>
     <div class="s-canvas">
-        <canvas
-            id="s-canvas"
-            :width="contentWidth"
-            :height="contentHeight"
-            @click="refreshCode"
-        ></canvas>
+        <canvas id="s-canvas" :width="contentWidth" :height="contentHeight" @click="refreshCode" />
     </div>
 </template>
 <script lang="ts" setup>
 import { onMounted } from 'vue';
+
+//验证码
+const verifyCode = defineModel<string>({ default: '2048' });
 
 // 定义props类型
 interface CodeProps {
@@ -36,20 +34,18 @@ const props = withDefaults(defineProps<CodeProps>(), {
     maxDot: 10
 });
 
-//验证码
-const verifyCode = defineModel({ default: '2048' });
-
 // 生成校验码
 const makeCode = (len = 4) => {
     let code = '';
-    const codeLength = len; //验证码的长度
+    //验证码的长度
+    const codeLength = len;
     // 定义生成验证码的字符集,去除易混淆的字符集1il0oO
     const identifyCodes = '123456789abcdefjhijkinpqrsduvwxyzABCDEFGHJKLMNPQRSTUVWXYZ';
     for (let i = 0; i < codeLength; i++) {
         // 获取随机字符
-        code += identifyCodes[randomNum(0, identifyCodes.length)];
+        code += identifyCodes[randomNum(identifyCodes.length, 0)];
     }
-    return code; //把code值赋给验证码
+    return code;
 };
 
 // 重置验证码
@@ -61,31 +57,31 @@ const refreshCode = () => {
 };
 
 //随机数生成：根据角标拿字符串的值
-const randomNum = (min = 0, max: number) => Math.floor(Math.random() * (max - min)) + min;
+const randomNum = (max: number, min = 0) => Math.floor(Math.random() * (max - min)) + min;
 
 // 生成一个随机的颜色
 function randomColor(min: number, max: number) {
-    let r = randomNum(min, max);
-    let g = randomNum(min, max);
-    let b = randomNum(min, max);
+    const r = randomNum(max, min);
+    const g = randomNum(max, min);
+    const b = randomNum(max, min);
     return 'rgb(' + r + ',' + g + ',' + b + ')';
 }
 /** 绘制文字 */
-function drawPic(verifyCode: string) {
-    let canvas = document.getElementById('s-canvas') as HTMLCanvasElement;
+function drawPic(text: string) {
+    const canvas = document.getElementById('s-canvas') as HTMLCanvasElement;
     if (!canvas) {
         console.error('找不到 canvas 元素');
         return;
     }
     //创建一个2D对象作为上下文。
-    let ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
+    const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
     ctx.textBaseline = 'bottom';
     // 绘制背景
     ctx.fillStyle = '#e6ecfd';
     ctx.fillRect(0, 0, props.contentWidth, props.contentHeight);
     // 绘制文字
-    for (let i = 0; i < verifyCode.length; i++) {
-        drawText(ctx, verifyCode, i);
+    for (let i = 0; i < text.length; i++) {
+        drawText(ctx, text, i);
     }
     drawLine(ctx, props.maxLine);
     drawDot(ctx, props.maxDot);
@@ -96,16 +92,18 @@ function drawPic(verifyCode: string) {
  * @param verifyCode 要显示的文字
  * @param index 字符索引
  */
-function drawText(ctx: CanvasRenderingContext2D, verifyCode: string, index: number) {
-    ctx.fillStyle = randomColor(50, 160); // 随机生成字体颜色
-    ctx.font = randomNum(props.fontSizeMin, props.fontSizeMax) + 'px SimHei'; // 随机生成字体大小
-    let x = (index + 1) * (props.contentWidth / (verifyCode.length + 1));
-    let y = randomNum(props.fontSizeMax, props.contentHeight - 5);
-    var deg = randomNum(-10, 15);
+function drawText(ctx: CanvasRenderingContext2D, text: string, index: number) {
+     // 随机生成字体颜色
+    ctx.fillStyle = randomColor(50, 160);
+    // 随机生成字体大小
+    ctx.font = randomNum(props.fontSizeMax, props.fontSizeMin) + 'px SimHei'; 
+    const x = (index + 1) * (props.contentWidth / (text.length + 1));
+    const y = randomNum(props.contentHeight - 5, props.fontSizeMax);
+    const deg = randomNum(15, -10);
     // 修改坐标原点和旋转角度
     ctx.translate(x, y);
     ctx.rotate((deg * Math.PI) / 180);
-    ctx.fillText(verifyCode[index], 0, 0);
+    ctx.fillText(text[index], 0, 0);
     // 恢复坐标原点和旋转角度
     ctx.rotate((-deg * Math.PI) / 180);
     ctx.translate(-x, -y);
@@ -121,8 +119,8 @@ function drawLine(ctx: CanvasRenderingContext2D, maxLine = 4) {
     for (let i = 0; i < maxLine; i++) {
         ctx.strokeStyle = randomColor(150, 200);
         ctx.beginPath();
-        ctx.moveTo(randomNum(0, props.contentWidth), randomNum(0, props.contentHeight));
-        ctx.lineTo(randomNum(0, props.contentWidth), randomNum(0, props.contentHeight));
+        ctx.moveTo(randomNum(props.contentWidth, 0), randomNum(props.contentHeight, 0));
+        ctx.lineTo(randomNum(props.contentWidth, 0), randomNum(props.contentHeight, 0));
         ctx.stroke();
     }
 }
@@ -138,8 +136,8 @@ function drawDot(ctx: CanvasRenderingContext2D, maxDot = 10) {
         ctx.fillStyle = randomColor(0, 255);
         ctx.beginPath();
         ctx.arc(
-            randomNum(0, props.contentWidth),
-            randomNum(0, props.contentHeight),
+            randomNum(props.contentWidth, 0),
+            randomNum(props.contentHeight, 0),
             1,
             0,
             2 * Math.PI

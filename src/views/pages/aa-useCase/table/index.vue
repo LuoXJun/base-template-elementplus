@@ -35,19 +35,7 @@ const pageInfo = reactive<PageInfo>({
     pageSize: 10,
     total: 100
 });
-const tableData = ref([
-    {
-        num1: '测试1',
-        num2: '测试2',
-        num3: '测试3'
-    },
-    {
-        num1: '测试1',
-        num2: '测试2',
-        num3: '测试3',
-        num4: '测试4',
-    }
-]);
+const tableData = ref([{}]);
 
 // 设置默认选中状态
 onMounted(() => {

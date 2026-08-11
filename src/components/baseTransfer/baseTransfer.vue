@@ -4,12 +4,12 @@
             <div class="transfer-tree-header">
                 <div>
                     <el-checkbox
-                        class="label"
                         v-model="isAllSelected"
+                        class="label"
                         :indeterminate="indeterminate"
-                        @change="allSelected"
                         :label="label[0]"
                         size="large"
+                        @change="allSelected"
                     />
                     <span>({{ getNodeKeys(treeData).length }})</span>
                 </div>
@@ -39,7 +39,7 @@
                     :filter-node-method="filterNode"
                     @check="getCheckedData"
                 >
-                    <template #="{ row: { node, data } }">
+                    <template #default="{ row: { data } }">
                         <span :class="{ 'transfer-tree-is-disabled': data.disabled }">
                             {{ data[autoProps.label] }}
                         </span>
@@ -47,7 +47,7 @@
                 </baseTree>
             </div>
         </div>
-        <div></div>
+        <div />
         <div>
             <div class="transfer-tree-header">
                 <div style="line-height: 40px">
@@ -78,7 +78,7 @@
                     expand-on-click
                     :filter-node-method="filterNode"
                 >
-                    <template #="{ row: { node, data } }">
+                    <template #default="{ row: { data } }">
                         <div class="transfer-tree-content-label">
                             <span :class="{ 'transfer-tree-is-disabled': data.disabled }">
                                 {{ data[autoProps.label] }}
@@ -121,7 +121,7 @@ const emits = defineEmits<{
     onCheck: [data: TreeNodeData[]];
 }>();
 
-const treeData = defineModel<T[]>({ default: [] });
+const treeData = defineModel<T[]>({ default: () => [] });
 
 const props = defineProps({
     autoProps: {
@@ -150,7 +150,7 @@ const props = defineProps({
     },
     filterNode: {
         type: Function as PropType<FilterNodeMethodFunction>,
-        default: () => {}
+        default: () => ({})
     }
 });
 
@@ -265,149 +265,6 @@ const allSelected = (check: CheckboxValueType) => {
 };
 </script>
 
-<style lang="scss">
-.transfer-tree {
-    display: flex;
-    align-items: center;
-    > div:nth-of-type(2) {
-        display: flex;
-        align-items: center;
-        justify-items: center;
-        padding: 0 12px;
-        box-sizing: border-box;
-        height: 352px;
-        > div {
-            display: flex;
-            flex-direction: column;
-            .el-button {
-                margin: 0;
-                margin-top: 16px;
-                width: 24px;
-                height: 24px;
-                padding: 0;
-                box-sizing: border-box;
-            }
-        }
-    }
-    > div:not(:nth-of-type(2)) {
-        width: 332px;
-        height: 352px;
-        overflow: auto;
-        box-sizing: border-box;
-        padding: 16px;
-        border-radius: 6px;
-        border: 1px solid #d8dce2;
-        .transfer-tree-header {
-            > div:first-child {
-                display: flex;
-                align-items: center;
-                .label {
-                    color: #1e2945;
-                    /* Body/Medium */
-                    font-family: 'PingFang SC';
-                    font-size: 14px;
-                    font-style: normal;
-                    font-weight: 400;
-                    line-height: 22px;
-                }
-                .el-input-group__append {
-                    background: unset;
-                    border: unset;
-                }
-            }
-        }
-        .transfer-tree-content {
-            height: 245px;
-            padding-right: 5px;
-            overflow: auto;
-            .el-tree-node.is-checked {
-                .el-tree-node__content {
-                    background: #f2f3ff;
-                    color: #0052d9 !important;
-                }
-            }
-            .el-tree-node {
-                padding: 4px 0;
-
-                .el-tree-node__content {
-                    /* Body/Medium */
-                    font-family: 'PingFang SC';
-                    font-size: 14px;
-                    font-style: normal;
-                    font-weight: 400;
-                    line-height: 22px; /* 157.143% */
-                    &:hover {
-                        background: #f2f3ff;
-                    }
-                    .transfer-tree-is-disabled {
-                        color: #757f96;
-                        cursor: not-allowed;
-                    }
-
-                    .tree-item-label {
-                        display: flex;
-                        align-items: center;
-                        justify-content: space-between;
-                        width: 100%;
-                        > div {
-                            flex: 40px 0 0;
-                            text-align: right;
-                        }
-                    }
-                }
-            }
-            .transfer-tree-content-label {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                width: 100%;
-                svg {
-                    cursor: pointer;
-                }
-            }
-        }
-        .transfer-tree-content-right {
-            color: #1e2945;
-
-            /* --td-font-body-small */
-            font-family: 'PingFang SC';
-            font-size: 14px;
-            font-style: normal;
-            font-weight: 400;
-            line-height: 20px; /* 166.667% */
-            height: 245px;
-            overflow: auto;
-            padding-right: 5px;
-            > div {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                margin: 10px 0;
-                svg {
-                    cursor: pointer;
-                }
-                .transfer-tree-content-right-item {
-                    .el-button {
-                        border-radius: 3px;
-                        border: 1px solid #d8dce2;
-                        background: #f1f3f5;
-                        margin: 0 0 0 10px;
-                        height: 20px;
-                        padding: 2px;
-                        color: rgba(0, 0, 0, 0.9);
-
-                        /* --td-font-body-small */
-                        font-family: 'PingFang SC';
-                        font-size: 12px;
-                        font-style: normal;
-                        font-weight: 400;
-                        line-height: 20px; /* 166.667% */
-                        max-width: 218px;
-                        overflow: hidden;
-                    }
-                }
-            }
-        }
-    }
-}
+<style lang="scss" scoped>
+@use './index.scss';
 </style>

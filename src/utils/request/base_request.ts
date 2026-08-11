@@ -6,14 +6,15 @@ import qs from 'qs';
 class BaseRequest {
     instance: AxiosInstance;
     interceptors?: IbaseRequestConfig;
-    // 接受实例化的loading对象
-    loading: any;
     // 是否显示加载
     isLoading: boolean;
 
     constructor(config: IbaseInstanceConfig) {
         this.instance = axios.create(config);
-        this.interceptors = config.interceptors;
+        this.interceptors =
+            typeof config.interceptors === 'function'
+                ? config.interceptors(this.instance)
+                : config.interceptors;
         this.isLoading = config.isLoading ?? true;
 
         /**
@@ -60,7 +61,6 @@ class BaseRequest {
     private commonResponseInterceptor = () => {
         this.instance.interceptors.response.use(
             (res: AxiosResponse<ResponseDataType<any>>) => {
-                this.loading?.close();
                 if (res.request.responseType == 'blob') {
                     const size = res.headers['content-length'];
                     let name = res.headers['content-disposition'] ?? '';
@@ -83,7 +83,6 @@ class BaseRequest {
                 return res;
             },
             (err) => {
-                this.loading?.close();
                 return Promise.reject(err);
             }
         );
@@ -93,20 +92,16 @@ class BaseRequest {
     request<T>(config: IbaseInstanceConfig): AxiosPromise<ResponseDataType<T>> {
         // 发送请求时控制是否显示加载框
         this.isLoading = config.isLoading ?? true;
+        let loading: any;
         // 发起请求时调用加载
         if (this.isLoading) {
-            this.loading = ElLoading.service({
+            loading = ElLoading.service({
                 fullscreen: true,
                 lock: true,
                 text: config.loadingText ?? 'Loading'
             });
         }
         return new Promise((resolve, reject) => {
-            if (config.interceptors?.requestIntercepter) {
-                // @ts-ignore
-                config = config.interceptors.requestIntercepter(config);
-            }
-
             const params = config.params || {};
             if (config.method?.toUpperCase() === 'GET' && params) {
                 config.params = {};
@@ -118,12 +113,12 @@ class BaseRequest {
 
             this.instance.request<ResponseDataType<T>>(config).then(
                 (res) => {
-                    if (config.interceptors?.responseIntercepter) {
-                        res = config.interceptors.responseIntercepter(res);
-                    }
+                    loading?.close();
+
                     resolve(res);
                 },
                 (err) => {
+                    loading?.close();
                     reject(err?.response ?? err);
                 }
             );
@@ -177,3 +172,7 @@ class BaseRequest {
     }
 }
 export default BaseRequest;
+
+// export const createRequest = (config:) => {
+
+// };

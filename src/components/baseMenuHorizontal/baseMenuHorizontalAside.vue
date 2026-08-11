@@ -1,11 +1,6 @@
 <template>
     <div class="base-menu-horizontal-aside">
-        <template
-            v-for="item in list.sort((a, b) => {
-                return (a.meta!.sort as number) - (b.meta!.sort as number);
-            })"
-            :key="item"
-        >
+        <template v-for="item in sortMenu" :key="item">
             <el-sub-menu v-if="item.meta?.type == 'menu'" :index="parentPath + item.path">
                 <template #title>
                     <span style="padding-left: 10px; box-sizing: border-box">
@@ -16,7 +11,7 @@
                 <baseMenuHorizontalAside
                     :list="item.children"
                     :parent-path="parentPath + item.path + '/'"
-                ></baseMenuHorizontalAside>
+                />
             </el-sub-menu>
             <el-menu-item
                 v-if="item.meta?.type == 'link' && item.meta?.isHidden !== true"
@@ -44,6 +39,14 @@ const props = defineProps({
         type: String,
         default: ''
     }
+});
+
+const sortMenu = computed(() => {
+    const arr = props.list.slice();
+
+    return arr.sort((a, b) => {
+        return (a.meta!.sort as number) - (b.meta!.sort as number);
+    });
 });
 </script>
 

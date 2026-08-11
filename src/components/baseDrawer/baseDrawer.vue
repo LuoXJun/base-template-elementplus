@@ -1,7 +1,7 @@
 <template>
     <el-drawer
-        class="base-drawer"
         v-model="dialogVisible"
+        class="base-drawer"
         :close-on-click-modal="true"
         destroy-on-close
         :title="title"
@@ -19,7 +19,7 @@
             </el-icon>
         </div>
         <div class="base-drawer-content">
-            <slot></slot>
+            <slot />
         </div>
         <div class="base-drawer-footer">
             <slot name="footer">
@@ -38,7 +38,7 @@ const dialogVisible = defineModel({ default: false });
 
 const emits = defineEmits(['onConfirm', 'onCancel']);
 
-const props = defineProps({
+defineProps({
     title: {
         type: String,
         default: () => '标题'

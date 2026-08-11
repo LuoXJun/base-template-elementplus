@@ -99,27 +99,28 @@ export const findNodeAndBuildTree = (
         path.push(node);
 
         if (node[nodeKey] === targetId) {
-            return path.slice(); // 返回路径的副本
+            // 返回路径的副本
+            return path.slice();
         }
 
         if (node[children] && node[children].length > 0) {
-            for (let child of node[children]) {
+            for (const child of node[children]) {
                 const result = findPath(child, path);
                 if (result) return result;
             }
         }
-
-        path.pop(); // 回溯
+        // 回溯
+        path.pop();
         return null;
     }
 
     // 在整棵树中查找路径
-    for (let rootNode of tree) {
+    for (const rootNode of tree) {
         const path = findPath(rootNode, []);
         if (path) arr = path;
     }
-
-    return arr; // 未找到目标节点
+    // 未找到目标节点
+    return arr;
 };
 
 /**
@@ -138,7 +139,8 @@ export const findLeafNodesOptimized = (flatArray: string[]) => {
         for (const otherNode of nodeSet) {
             if (otherNode !== nodeId && otherNode.startsWith(nodeId + '.')) {
                 parentNodes.add(nodeId);
-                break; // 找到一个子节点就足够证明它是父节点
+                // 找到一个子节点就足够证明它是父节点
+                break;
             }
         }
     }
@@ -153,15 +155,15 @@ export const getTreePathByIdOptimized = (
     nodeKey = 'id',
     children = 'children'
 ) => {
-    function findAndBuildPath(nodes: TreeData, targetNodeKey: TreeKey): any {
+    function findAndBuildPath(nodes: TreeData, key: TreeKey): any {
         for (const node of nodes) {
-            if (node[nodeKey] === targetNodeKey) {
+            if (node[nodeKey] === key) {
                 // 找到目标节点，返回该节点的完整拷贝
                 return JSON.parse(JSON.stringify(node));
             }
 
             if (node[children] && node[children].length > 0) {
-                const found = findAndBuildPath(node[children], targetNodeKey);
+                const found = findAndBuildPath(node[children], key);
                 if (found) {
                     // 构建路径上的父节点，只包含找到的子节点路径
                     return {

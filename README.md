@@ -6,8 +6,8 @@
 
 1. **Corepack 版本校验**：`package.json` 中的 `"packageManager": "pnpm@11.21.0"` 字段，Corepack 会校验 pnpm 版本是否一致
 2. **依赖安装拦截**：`preinstall`（npm 侧）/ `pnpm:devPreinstall`（pnpm 侧）钩子调用 `node scripts/check-package-manager.cjs`：
-   - 校验 **Node 版本**（不满足 `engines.node` 时直接报错中断）
-   - 使用 npm / yarn / bun 执行依赖安装时直接报错退出（不依赖网络）
+    - 校验 **Node 版本**（不满足 `engines.node` 时直接报错中断）
+    - 使用 npm / yarn / bun 执行依赖安装时直接报错退出（不依赖网络）
 3. **pnpm 版本约束**：`engines.pnpm`（`>=11.0.0`）+ pnpm 自带的 `package-manager-strict`（默认开启，校验 `packageManager` 字段）
 4. **Node 版本约束**：`engines.node`（`>=22.23.2`，npm 12 的最低要求）+ `.npmrc` 中 `engine-strict=true`（依赖级严格校验）。**Node 20 已 EOL（2026-04），不再支持**
 
@@ -15,10 +15,12 @@
 
 **方案 A —— npm 12+（当前采用）**：无需 `package-lock.json`。
 npm 12 修复了对 pnpm 符号链接 node_modules 的误判，即使没有 lockfile，`npm i` 也会在依赖解析后立即被 `preinstall` 钩子拦截（实测验证）。
+
 > npm 12 不内置在任何 Node 版本中，需单独安装：`npm i -g npm@12`
 
 **方案 B —— npm 10/11 兼容**：需要提交 `package-lock.json`。
 npm 10/11 在无 lockfile 时会扫描 pnpm 的符号链接并将其误判为 workspace 包，导致长时间解析（转圈）或 ERESOLVE 报错；有 lockfile 时以它为基线做增量解析，可秒级被拦截。
+
 > 若团队存在 Node < 22.23.2 的环境（无法使用 npm 12），需退回本方案：补回 package-lock.json 并随依赖变更同步。
 > 注：`npm install --ignore-scripts` 可跳过 preinstall 钩子（包管理器设计如此，仓库侧无法阻止），如需彻底防止，请在 CI 中统一使用 pnpm 执行安装。
 

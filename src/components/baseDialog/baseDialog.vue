@@ -7,9 +7,9 @@
             destroy-on-close
             :title="title"
             :style="{ height, width }"
-            @close="emits('onClose')"
             :show-close="false"
             :draggable="draggable"
+            @close="emits('onClose')"
         >
             <template #header>
                 <div class="base-dialog-header">
@@ -20,7 +20,7 @@
                 </div>
             </template>
             <div class="base-dialog-content">
-                <slot></slot>
+                <slot />
             </div>
             <div class="base-dialog-footer">
                 <slot name="footer">
@@ -54,7 +54,7 @@ defineProps({
         default: () => '650px'
     },
     draggable: {
-        type: true,
+        type: Boolean,
         default: () => true
     }
 });

@@ -52,16 +52,59 @@ p {
     border-radius: 10px;
 }
 
-// 字体
-
+/* ===== 字体定义 ===== */
 @font-face {
     font-family: 'YouSheBiaoTiHei';
     src: url('@/assets/font/YouSheBiaoTiHei-2.ttf');
 }
 
+/* 苹方 */
 @font-face {
     font-family: 'PingFang SC';
-    src: url('@/assets/font/PingFangSC-Regular.woff2');
+    src: url('@/assets/font/PingFangSC/PingFangSC-Ultralight.woff2') format('woff2');
+    font-weight: 100;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'PingFang SC';
+    src: url('@/assets/font/PingFangSC/PingFangSC-Thin.woff2') format('woff2');
+    font-weight: 200;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'PingFang SC';
+    src: url('@/assets/font/PingFangSC/PingFangSC-Light.woff2') format('woff2');
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'PingFang SC';
+    src: url('@/assets/font/PingFangSC/PingFangSC-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'PingFang SC';
+    src: url('@/assets/font/PingFangSC/PingFangSC-Medium.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'PingFang SC';
+    src: url('@/assets/font/PingFangSC/PingFangSC-Semibold.woff2') format('woff2');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
 }
 
 // 全局样式和或类名

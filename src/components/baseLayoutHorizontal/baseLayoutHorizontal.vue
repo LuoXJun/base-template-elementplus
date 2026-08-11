@@ -4,16 +4,16 @@
             <baseMenuHorizontalHeader />
         </div>
         <div class="lxj-main">
-            <div class="lxj-aside" v-if="store.currentMenu.length > 2">
+            <div v-if="store.currentMenu.length > 2" class="lxj-aside">
                 <el-menu :default-active="$route.path" mode="vertical" router unique-opened>
                     <baseMenuHorizontalAside
                         :list="routes"
-                        :parentPath="store.currentMenu.path + '/'"
+                        :parent-path="store.currentMenu.path + '/'"
                     />
                 </el-menu>
             </div>
             <div class="lxj-content">
-                <router-view></router-view>
+                <router-view />
             </div>
         </div>
     </div>

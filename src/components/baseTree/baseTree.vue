@@ -15,7 +15,7 @@
             @node-click="handleNodeClick"
             @check="handleNodeCheck"
         >
-            <template #="{ node, data }">
+            <template #default="{ node, data }">
                 <slot :row="{ node, data }">
                     <span>{{ node.label }}</span>
                 </slot>
@@ -26,10 +26,10 @@
 
 <script setup lang="ts" generic="T extends Record<string, any>">
 import { checkKeysExist } from '@/utils/common';
-import type { CheckedInfo, FilterNodeMethodFunction, TreeNodeData, TreeNode } from 'element-plus';
+import type { CheckedInfo, FilterNodeMethodFunction, TreeNode } from 'element-plus';
 import { type PropType } from 'vue';
 
-const treeData = defineModel<T[]>({ default: [] });
+const treeData = defineModel<T[]>({ default: () => [] });
 
 defineSlots<{
     [key: string]: (props: { row: { data: T; node: TreeNodeAuto<T> } }) => any;
@@ -71,7 +71,7 @@ defineProps({
     },
     filterNodeMethod: {
         type: Function as PropType<FilterNodeMethodFunction>,
-        default: () => {}
+        default: () => ({})
     }
 });
 

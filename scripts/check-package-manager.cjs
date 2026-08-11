@@ -12,24 +12,24 @@
  *   2. 包管理器：npm_execpath 必须指向 pnpm（否则 npm/yarn 安装直接失败）
  */
 
-const fs = require('fs')
-const path = require('path')
+const fs = require('fs');
+const path = require('path');
 
-const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'))
+const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
 
 // ================= Node 版本校验 =================
 
 /** '22.18.0' -> [22, 18, 0] */
 function parseVersion(v) {
-    return v.split('.').map(Number)
+    return v.split('.').map(Number);
 }
 
 /** a 与 b 比较：大于返回 1，小于返回 -1，相等返回 0 */
 function compare(a, b) {
     for (let i = 0; i < 3; i++) {
-        if (a[i] !== b[i]) return a[i] > b[i] ? 1 : -1
+        if (a[i] !== b[i]) return a[i] > b[i] ? 1 : -1;
     }
-    return 0
+    return 0;
 }
 
 /**
@@ -38,45 +38,45 @@ function compare(a, b) {
  */
 function matchesRange(version, range) {
     return range.split('||').some((clause) => {
-        clause = clause.trim()
+        clause = clause.trim();
         if (clause.startsWith('^')) {
-            const req = parseVersion(clause.slice(1))
-            return version[0] === req[0] && compare(version, req) >= 0
+            const req = parseVersion(clause.slice(1));
+            return version[0] === req[0] && compare(version, req) >= 0;
         }
         if (clause.startsWith('>=')) {
-            return compare(version, parseVersion(clause.slice(2))) >= 0
+            return compare(version, parseVersion(clause.slice(2))) >= 0;
         }
-        return false
-    })
+        return false;
+    });
 }
 
-const nodeRange = pkg.engines?.node
-const current = parseVersion(process.versions.node)
+const nodeRange = pkg.engines?.node;
+const current = parseVersion(process.versions.node);
 
 if (nodeRange && !matchesRange(current, nodeRange)) {
-    console.error('')
-    console.error('❌ Node 版本不满足项目要求！')
-    console.error(`   当前版本: v${process.versions.node}`)
-    console.error(`   要求版本: ${nodeRange}`)
-    console.error('   请使用 nvm / fnm 等工具切换到受支持的 Node 版本后再试。')
-    console.error('')
-    process.exit(1)
+    console.error('');
+    console.error('❌ Node 版本不满足项目要求！');
+    console.error(`   当前版本: v${process.versions.node}`);
+    console.error(`   要求版本: ${nodeRange}`);
+    console.error('   请使用 nvm / fnm 等工具切换到受支持的 Node 版本后再试。');
+    console.error('');
+    process.exit(1);
 }
 
 // ================= 包管理器校验 =================
 
-const npmExecPath = (process.env.npm_execpath ?? '').toLowerCase()
+const npmExecPath = (process.env.npm_execpath ?? '').toLowerCase();
 
 if (npmExecPath.includes('pnpm')) {
-    console.log('✅ 检测到 pnpm，继续安装...')
-    process.exit(0)
+    console.log('✅ 检测到 pnpm，继续安装...');
+    process.exit(0);
 }
 
-const used = npmExecPath || '未知的包管理器（如 bun / 直装脚本等）'
-console.error('')
-console.error('❌ 本项目强制使用 pnpm 安装依赖！')
-console.error(`   当前检测到: ${used}`)
-console.error('   请改用以下命令安装:')
-console.error('       pnpm install')
-console.error('')
-process.exit(1)
+const used = npmExecPath || '未知的包管理器（如 bun / 直装脚本等）';
+console.error('');
+console.error('❌ 本项目强制使用 pnpm 安装依赖！');
+console.error(`   当前检测到: ${used}`);
+console.error('   请改用以下命令安装:');
+console.error('       pnpm install');
+console.error('');
+process.exit(1);

@@ -2,8 +2,8 @@
     <el-row>
         <el-col :span="8">
             树
-            <baseTree v-model="data" show-checkbox>
-                <template #="{ row: { data, node } }">
+            <baseTree v-model="treeData" show-checkbox>
+                <template #default="{ row: { data } }">
                     <span>{{ data.label }}</span>
                 </template>
             </baseTree>
@@ -11,8 +11,8 @@
         <el-col :span="8">
             获取选中项并保持原有结构
             <baseTransfer
+                v-model="treeData"
                 type="tree"
-                v-model="data"
                 node-key="id"
                 :filter-node="filterNode"
                 :checked-keys="checkedKeys"
@@ -21,8 +21,8 @@
         <el-col :span="8">
             仅获取选中项自身
             <baseTransfer
+                v-model="treeData"
                 type="li"
-                v-model="data"
                 node-key="id"
                 :filter-node="filterNode"
                 :checked-keys="checkedKeys"
@@ -36,7 +36,7 @@ import baseTree from '@/components/baseTree/baseTree.vue';
 import baseTransfer from '@/components/baseTransfer/baseTransfer.vue';
 import type { FilterNodeMethodFunction } from 'element-plus';
 
-const data = [
+const treeData = ref([
     {
         id: 1,
         label: 'Level one 1',
@@ -85,7 +85,7 @@ const data = [
             }
         ]
     }
-];
+]);
 
 const checkedKeys = [9, 8];
 

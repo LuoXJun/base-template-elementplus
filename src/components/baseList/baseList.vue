@@ -11,7 +11,7 @@
                     }"
                 >
                     <el-col
-                        :span="getWidth(item.single, item.span ?? defaultSpan)"
+                        :span="getWidth(item.span ?? defaultSpan, item.single)"
                         :class="{ resetFlex: defaultWidth > 0 }"
                     >
                         <span>
@@ -19,7 +19,7 @@
                         </span>
                     </el-col>
                     <el-col
-                        :span="24 - getWidth(item.single, item.span ?? defaultSpan)"
+                        :span="24 - getWidth(item.span ?? defaultSpan, item.single)"
                         :style="{ flex: 1, maxWidth: 'unset' }"
                     >
                         <span v-if="item.prop">
@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-const list = defineModel<ITableList[]>({ default: [{ label: 'label', value: 'value' }] });
+const list = defineModel<ITableList[]>({ default: () => [{ label: 'label', value: 'value' }] });
 
 const props = defineProps({
     /**默认一行展示两列*/
@@ -73,9 +73,9 @@ const props = defineProps({
     }
 });
 
-const getWidth = computed(() => (single = false, span: number) => {
+const getWidth = computed(() => (span: number, single = false) => {
     if (single) return Math.round(span / props.column);
-    else return Math.round(span / props.column) * props.column;
+    return Math.round(span / props.column) * props.column;
 });
 </script>
 

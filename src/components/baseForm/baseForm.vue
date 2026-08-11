@@ -12,16 +12,16 @@
                 <baseFormItem
                     v-if="item.isShow !== false"
                     v-model="modelValue"
-                    :formItemData="item"
+                    :form-item-data="item"
                     @on-change="onChange"
                 >
                     <template #[item.filed]>
-                        <slot :name="item.filed" :scope="item"></slot>
+                        <slot :name="item.filed" :scope="item" />
                     </template>
                 </baseFormItem>
             </template>
             <div style="flex: 1; text-align: right">
-                <slot name="footer" :data="{ modelValue, validate }"></slot>
+                <slot name="footer" :data="{ modelValue, validate }" />
             </div>
         </el-row>
     </el-form>
@@ -34,7 +34,7 @@ import { ElMessage } from 'element-plus';
 import baseFormItem from './baseFormItem.vue';
 
 const modelValue = defineModel<T>('modelValue', {
-    default: {}
+    default: () => ({}) as T
 });
 
 const emits = defineEmits<{

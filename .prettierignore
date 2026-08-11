@@ -4,3 +4,5 @@
 /src/assets
 /src/types/autoImport.d.ts
 /src/types/component.d.ts
+/scripts
+/docs

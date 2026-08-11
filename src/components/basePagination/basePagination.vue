@@ -21,7 +21,7 @@ import type { PropType } from 'vue';
 const emits = defineEmits<{
     handleChange: [type: 'sizeChange' | 'currentChange', value: number];
 }>();
-const pageInfo = defineModel<PageInfo>({ default: {} });
+const pageInfo = defineModel<PageInfo>({ default: () => ({ pageNum: 1, pageSize: 10, total: 0 }) });
 defineProps({
     disabled: {
         type: Boolean,

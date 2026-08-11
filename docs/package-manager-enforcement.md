@@ -9,15 +9,15 @@
 
 ## 强制机制组成
 
-| 配置位置 | 内容 | 作用 |
-|---|---|---|
-| `package.json` | `"packageManager": "pnpm@11.21.0"` | 声明标准包管理器；启用 corepack 的环境会强制校验，npm 会给出警告 |
-| `package.json` | `engines.node: ">=22.23.2"` | **Node 版本约束**（npm 12 的最低要求；Node 20 已 EOL 不再支持） |
-| `package.json` | `engines.pnpm: ">=11.0.0"` | pnpm 自身版本下限 |
-| `package.json` | `scripts["pnpm:devPreinstall"]` | **pnpm 侧强制点**（pnpm 11 的 root 专属生命周期钩子） |
-| `package.json` | `scripts.preinstall` | **npm 侧强制点**（npm 每次 install 必执行） |
-| `scripts/check-package-manager.cjs` | 检查脚本 | ① Node 版本校验 ② 通过 `npm_execpath` 判断是否为 pnpm，否则报错退出码 1 |
-| `.npmrc` | `engine-strict=true` | 让 npm/pnpm 对**依赖**的 engines 校验从警告升级为失败 |
+| 配置位置                            | 内容                               | 作用                                                                    |
+| ----------------------------------- | ---------------------------------- | ----------------------------------------------------------------------- |
+| `package.json`                      | `"packageManager": "pnpm@11.21.0"` | 声明标准包管理器；启用 corepack 的环境会强制校验，npm 会给出警告        |
+| `package.json`                      | `engines.node: ">=22.23.2"`        | **Node 版本约束**（npm 12 的最低要求；Node 20 已 EOL 不再支持）         |
+| `package.json`                      | `engines.pnpm: ">=11.0.0"`         | pnpm 自身版本下限                                                       |
+| `package.json`                      | `scripts["pnpm:devPreinstall"]`    | **pnpm 侧强制点**（pnpm 11 的 root 专属生命周期钩子）                   |
+| `package.json`                      | `scripts.preinstall`               | **npm 侧强制点**（npm 每次 install 必执行）                             |
+| `scripts/check-package-manager.cjs` | 检查脚本                           | ① Node 版本校验 ② 通过 `npm_execpath` 判断是否为 pnpm，否则报错退出码 1 |
+| `.npmrc`                            | `engine-strict=true`               | 让 npm/pnpm 对**依赖**的 engines 校验从警告升级为失败                   |
 
 > ⚠️ `pnpm:devPreinstall` 与 `preinstall` 指向同一个检查脚本，分别服务 pnpm 与 npm。
 
@@ -70,16 +70,16 @@ pnpm install / pnpm add（依赖树有变化时）
 
 ## 已验证的行为（npm 10.9.3 / pnpm 11.21.0 / Node 22.18）
 
-| 场景 | 结果 |
-|---|---|
-| `npm i`（npm 12，无 package-lock.json） | 解析后立即被 preinstall 拦截（用户实测） |
-| `npm i`（npm 10/11 + package-lock.json，依赖无变化） | 秒级被 preinstall 拦截 |
+| 场景                                                          | 结果                                                                           |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `npm i`（npm 12，无 package-lock.json）                       | 解析后立即被 preinstall 拦截（用户实测）                                       |
+| `npm i`（npm 10/11 + package-lock.json，依赖无变化）          | 秒级被 preinstall 拦截                                                         |
 | `npm i`（npm 10/11 + package-lock.json，`pnpm add` 新依赖后） | 秒级被拦截；npm 仅增量解析新包，且会自动把 lockfile 同步到与 package.json 一致 |
-| `npm i`（npm 10/11，无 package-lock.json） | 转圈/ERESOLVE 后失败（最终仍拦截，但报错不友好）——方案 B 需避免 |
-| `pnpm add`（Node 版本不满足） | `pnpm:devPreinstall` 报 Node 错误，**安装中断**（exit 1） |
-| `pnpm install`（依赖有变化，Node 满足） | `pnpm:devPreinstall` 校验放行，正常安装 |
-| `pnpm install`（Already up to date） | 跳过钩子（无安装动作，无危害） |
-| `pnpm install`（依赖的 engines 不满足） | `engine-strict` 拒绝安装 |
+| `npm i`（npm 10/11，无 package-lock.json）                    | 转圈/ERESOLVE 后失败（最终仍拦截，但报错不友好）——方案 B 需避免                |
+| `pnpm add`（Node 版本不满足）                                 | `pnpm:devPreinstall` 报 Node 错误，**安装中断**（exit 1）                      |
+| `pnpm install`（依赖有变化，Node 满足）                       | `pnpm:devPreinstall` 校验放行，正常安装                                        |
+| `pnpm install`（Already up to date）                          | 跳过钩子（无安装动作，无危害）                                                 |
+| `pnpm install`（依赖的 engines 不满足）                       | `engine-strict` 拒绝安装                                                       |
 
 ## 已知边界
 

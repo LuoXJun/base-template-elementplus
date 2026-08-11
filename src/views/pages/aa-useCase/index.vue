@@ -6,8 +6,7 @@
             <Menu v-else-if="activeName === labels[1]" />
             <Panel v-else-if="activeName === labels[2]" />
             <Table v-else-if="activeName === labels[3]" />
-            <Tree v-else-if="activeName === labels[4]" />
-            <timeline v-else />
+            <Tree v-else />
         </baseTabs>
     </div>
 </template>
@@ -19,7 +18,6 @@ import Menu from './menu/index.vue';
 import Panel from './panel/index.vue';
 import Table from './table/index.vue';
 import Tree from './tree/index.vue';
-import timeline from './timeline/index.vue';
 
 const labels = ['表单', '菜单', '弹出框', '表格', '树', '其他'];
 const activeName = ref(labels[0]);

@@ -16,4 +16,6 @@ declare global {
 
     //
     interface UploadFile<T extends Record<string, any> = {}> extends UploadUserFile, T {}
+    
+    type ElBtnType = 'text' | 'default' | 'primary' | 'success' | 'warning' | 'info' | 'danger';
 }

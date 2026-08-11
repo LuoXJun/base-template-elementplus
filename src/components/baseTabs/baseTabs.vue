@@ -3,6 +3,7 @@
         <div class="tab-title">
             <p
                 v-for="label in labels"
+                :key="label"
                 :class="{ active: activeName === label }"
                 @click="onTabChange(label)"
             >
@@ -10,20 +11,20 @@
             </p>
         </div>
         <div class="tas-content">
-            <slot></slot>
+            <slot />
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
 import type { PropType } from 'vue';
-const activeName = defineModel({ default: '' });
+const activeName = defineModel<string>({ default: '' });
 
 const emits = defineEmits<{
     onClick: [label: string];
 }>();
 
-const props = defineProps({
+defineProps({
     labels: {
         type: Array as PropType<Array<string>>,
         default: () => []

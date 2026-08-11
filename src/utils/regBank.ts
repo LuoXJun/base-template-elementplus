@@ -22,27 +22,25 @@ export const passwardReg =
 
 // 根据身份证获取年龄
 export function analyzeIDCard(IDCard: string) {
-    const age = 0;
     let yearBirth: number, monthBirth: number, dayBirth: number;
-    //获取用户身份证号码
-    const userCard = IDCard;
     //如果身份证号码为undefind则返回空
-    if (!userCard) {
-        return age;
+    if (!IDCard) {
+        return 0;
     }
-    const reg = idcardREG; //验证身份证号码的正则
-    if (reg.test(userCard)) {
-        if (userCard.length == 15) {
-            const org_birthday = userCard.substring(6, 12);
+    //验证身份证号码的正则
+    const reg = idcardREG;
+    if (reg.test(IDCard)) {
+        if (IDCard.length == 15) {
+            const org_birthday = IDCard.substring(6, 12);
             //获取出生年月日
             yearBirth = parseInt('19' + org_birthday.substring(0, 2));
             monthBirth = parseInt(org_birthday.substring(2, 4));
             dayBirth = parseInt(org_birthday.substring(4, 6));
         } else {
             //获取出生年月日
-            yearBirth = parseInt(userCard.substring(6, 10));
-            monthBirth = parseInt(userCard.substring(10, 12));
-            dayBirth = parseInt(userCard.substring(12, 14));
+            yearBirth = parseInt(IDCard.substring(6, 10));
+            monthBirth = parseInt(IDCard.substring(10, 12));
+            dayBirth = parseInt(IDCard.substring(12, 14));
         }
         //获取当前年月日并计算年龄
         const myDate = new Date();
@@ -54,7 +52,6 @@ export function analyzeIDCard(IDCard: string) {
         }
         //返回年龄
         return age;
-    } else {
-        return 0;
     }
+    return 0;
 }

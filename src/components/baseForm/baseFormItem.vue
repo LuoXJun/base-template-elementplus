@@ -79,7 +79,7 @@
                     :disabled="item.disabled"
                     v-bind="item.select"
                     @change="(val: string) => onChange(item.filed, val)"
-                ></el-tree-select>
+                />
             </template>
             <template v-else-if="item.type == 'textarea'">
                 <el-input
@@ -126,7 +126,8 @@
                     <el-radio
                         v-for="(option, index) in item.radio?.options"
                         :key="index"
-                        :label="option.value"
+                        :label="option.label"
+                        :value="option.value"
                         :border="option.border"
                     >
                         {{ option.label }}
@@ -142,7 +143,8 @@
                     <el-radio-button
                         v-for="(option, index) in item.radio?.options"
                         :key="index"
-                        :label="option.value"
+                        :label="option.label"
+                        :value="option.value"
                         :border="option.border"
                     >
                         {{ option.label }}
@@ -158,12 +160,13 @@
                         v-for="(option, index) in item.checkbox?.options"
                         :key="index"
                         :label="option.label"
+                        :value="option.value"
                         :border="option.border"
                     />
                 </el-checkbox-group>
             </template>
             <template v-else-if="item.type == 'slot'">
-                <slot :name="item.filed" :scope="item"></slot>
+                <slot :name="item.filed" :scope="item" />
             </template>
         </el-form-item>
     </el-col>
@@ -171,7 +174,7 @@
 
 <script setup lang="ts" generic="T extends Record<string, any>">
 const modelValue = defineModel<T>('modelValue', {
-    default: {}
+    default: () => ({}) as T
 });
 
 const emits = defineEmits<{
@@ -181,7 +184,7 @@ const emits = defineEmits<{
 const props = defineProps({
     formItemData: {
         type: Object as PropType<IformItem<{ filed: Extract<keyof T, string>; data?: any[] }>>,
-        default: () => {}
+        default: () => ({})
     },
     layout: {
         type: Object as PropType<any>,

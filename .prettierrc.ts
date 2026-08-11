@@ -1,4 +1,6 @@
-module.exports = {
+import { type Config } from 'prettier';
+
+const config: Config = {
     // 一行最多 80 字符
     printWidth: 100,
     // 使用 4 个空格缩进
@@ -28,8 +30,11 @@ module.exports = {
     insertPragma: false,
     // 使用默认的折行标准
     proseWrap: 'preserve',
-    // 根据显示样式决定 html 要不要折行
-    htmlWhitespaceSensitivity: 'ignore',
     // 换行符
-    endOfLine: 'lf'
+    endOfLine: 'lf',
+    // 根据显示样式决定 html 要不要折行 css
+    htmlWhitespaceSensitivity: 'ignore',
+    experimentalTernaries: false
 };
+
+export default config;

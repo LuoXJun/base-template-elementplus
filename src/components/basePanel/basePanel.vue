@@ -12,10 +12,12 @@
             :style="{ cursor: draggable ? 'move' : 'unset' }"
         >
             <p>{{ title }}</p>
-            <el-icon @click="onCancel"><Close /></el-icon>
+            <el-icon @click="onCancel">
+                <Close />
+            </el-icon>
         </div>
         <div class="base-panel-content">
-            <slot></slot>
+            <slot />
         </div>
         <div class="base-panel-footer">
             <slot name="footer">
@@ -49,7 +51,7 @@ const props = defineProps({
         default: () => '650px'
     },
     draggable: {
-        type: true,
+        type: Boolean,
         default: () => true
     }
 });

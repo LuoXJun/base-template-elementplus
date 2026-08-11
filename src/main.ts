@@ -9,9 +9,9 @@ import ElementPlus from 'element-plus';
 import zhCn from 'element-plus/es/locale/lang/zh-cn';
 const pinia = createPinia();
 
-// 需要进行持久化的数据id
+//menu：store注册的id，state：保存在本地时的名称
 const keyVal = {
-    menu: 'state' //menu：store注册的id，state：保存在本地时的名称
+    menu: 'state'
 };
 pinia.use(({ store }) => {
     Object.entries(keyVal).forEach(([key, value]) => {

@@ -50,7 +50,7 @@
                             @mouseover="isHovering = true"
                             @mouseleave="isHovering = false"
                         >
-                            <i :class="['fas', button.icon]"></i>
+                            <i :class="['fas', button.icon]" />
                             {{ button.text }}
                         </button>
                     </div>
@@ -59,7 +59,7 @@
                         <div class="search-container">
                             <input type="text" placeholder="搜索网站内容..." />
                             <button class="search-btn">
-                                <i class="fas fa-search"></i>
+                                <i class="fas fa-search" />
                             </button>
                         </div>
                     </div>

@@ -1,7 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
 import type { RouteRecordRaw } from 'vue-router';
 import { useMenuStore } from '@/stores/useMenuStore';
-import { stringifyQuery, parseQuery } from './encodeQuery';
 
 const routes: RouteRecordRaw[] = [
     {
@@ -24,14 +23,11 @@ const router = createRouter({
     routes,
     scrollBehavior() {
         return { top: 0 };
-    },
-    stringifyQuery,
-    parseQuery
+    }
 });
 
 router.beforeEach((to, _, next) => {
     const store = useMenuStore();
-
     const token = sessionStorage.getItem('token');
 
     // store.setRecord(to);
@@ -43,17 +39,26 @@ router.beforeEach((to, _, next) => {
         return next();
     }
 
-    if (!token) return to.path !== '/login' ? next('/login') : next();
+    if (!token) {
+        return to.path !== '/login' ? next('/login') : next();
+    }
 
-    store.currentMenu = {
-        length: to.matched.length,
-        name: to.matched[1]?.name as string,
-        path: to.matched[1]?.path
-    };
+    // 直接使用会导致本地报警告，打包报错
+    // store.currentMenu = to.matched
+    if (to.matched.length >= 2) {
+        store.currentMenu = {
+            length: to.matched.length,
+            name: to.matched[1]?.name as string,
+            path: to.matched[1]?.path
+        };
+    }
 
+    /**
+     * isNeedUpdate用来控制路由重新注册
+     * hasRoue用来防止路由没有注册成功的情况，即便这种情况不应该会发生
+     * */
     if (store.isNeedUpdate || !router.hasRoute('layout')) {
         store.setRoute(store.getRoutes(store.menu));
-
         store.$patch((state) => {
             state.isNeedUpdate = false;
         });

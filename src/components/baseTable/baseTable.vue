@@ -143,14 +143,16 @@
     </div>
 </template>
 
-<script setup lang="ts" generic="T extends Record<string, any>">
-import type { ElTable } from 'element-plus';
+<script setup lang="ts" generic="T extends DefaultRow">
+import type { TableInstance } from 'element-plus';
 import { type PropType } from 'vue';
-import { messageBox } from '@/components/messageBox';
+import { messageBox } from '@/components/baseMessageBox';
+import type { DefaultRow } from 'element-plus/es/components/table/src/table/defaults.mjs';
+import basePopover from '@/components/basePopover/basePopover.vue';
 
 const emits = defineEmits<{
     selected: [data: { value: T[]; row?: T; type: 'change' | 'select' | 'selectAll' }];
-    currentChange: [row: T];
+    currentChange: [row: T | null];
     rowClick: [row: T];
     operation: [type: operationType, row: T];
 }>();
@@ -159,7 +161,7 @@ defineSlots<{
     [key: string]: (props: { scope: { row: T; $index: number; column: string } }) => any;
 }>();
 
-const tableData = defineModel<T[]>({ default: [] });
+const tableData = defineModel<T[]>({ default: () => [] });
 
 defineProps({
     tableColumn: {
@@ -203,7 +205,7 @@ defineProps({
     }
 });
 
-const multipleTableRef = ref<InstanceType<typeof ElTable>>();
+const multipleTableRef = ref<TableInstance>();
 
 /** 获取不在下拉菜单中的操作按钮 */
 function getPrimaryOps(operations: ITableOperation[]): ITableOperation[] {
@@ -260,7 +262,7 @@ const toggleRowSelection = (row: T) => {
     multipleTableRef.value!.toggleRowSelection(row, true);
 };
 
-const currentChange = (row: T) => {
+const currentChange = (row: T | null) => {
     emits('currentChange', row);
 };
 
