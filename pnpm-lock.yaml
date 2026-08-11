@@ -39,7 +39,7 @@ importers:
         specifier: ^6.14.0
         version: 6.14.0
       shpjs:
-        specifier: ^6.2.0
+        specifier: 6.2.0
         version: 6.2.0
       vite-plugin-cesium:
         specifier: ^1.2.23
